@@ -837,6 +837,19 @@ button.recent-row:hover strong { color: var(--primary); }
 .app-loading p { font-size: 13px; max-width: 320px; }
 .app-loading .btn { min-width: 200px; }
 
+/* Sidebar on short screens (e.g. 125% zoom): brand and sign-out stay visible, the menu scrolls */
+.side-nav { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+.brand, .trial-card, .user-card { flex-shrink: 0; }
+.trial-card { margin-top: 12px; }
+@media (max-height: 820px) {
+  .sidebar { padding-top: 18px; }
+  .brand { padding-bottom: 14px; }
+  .nav-item { height: 38px; }
+  .nav-space { margin-top: 8px; }
+  .trial-card { display: none; }
+  .user-card { margin-top: 10px; padding-top: 12px; }
+}
+
 /* ===== Phone readability (generated) ===== */
 @media (max-width: 760px) {
   .balance,
