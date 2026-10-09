@@ -1,7 +1,9 @@
 import { createClient } from "@supabase/supabase-js";
 
-const url = import.meta.env.VITE_SUPABASE_URL;
-const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+// trim(): values pasted into a hosting dashboard often carry a trailing newline,
+// which makes every request header invalid.
+const url = import.meta.env.VITE_SUPABASE_URL?.trim();
+const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY?.trim();
 if (!url || !key) throw new Error("Missing VITE_SUPABASE_URL / VITE_SUPABASE_PUBLISHABLE_KEY. Copy them into .env.local.");
 
 // "Keep me signed in": remembered logins live in localStorage, others only
