@@ -33,7 +33,8 @@ export type Payment = {
   description: string;
 };
 
-export type AttendanceRecord = { id: string; memberId: string; memberName: string; at: string };
+/** One check-in. `by` is the name of the owner/staff who marked it ("" if unknown). */
+export type AttendanceRecord = { id: string; memberId: string; memberName: string; at: string; by: string };
 
 /** One membership period (first joining or a renewal). */
 export type Renewal = {

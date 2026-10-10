@@ -1,7 +1,7 @@
 // Reads and writes the gym's data in Supabase. Row Level Security on the
 // server limits everything to the logged-in user's gym and role.
 
-import { addDays, toLocalDateTime, todayISO } from "../lib/format";
+import { addDays, formatTime, toLocalDateTime, todayISO } from "../lib/format";
 import { supabase } from "../lib/supabase";
 import { ATTENDANCE_DAYS_LOADED, avatarColors, type AppData, type Member, type Payment } from "./types";
 
@@ -25,14 +25,15 @@ type PaymentRow = { id: string; member_id: string; amount: number; method: strin
 /** Loads everything the app shows for the logged-in user's gym. */
 export async function loadAppData(): Promise<AppData> {
   const since = addDays(todayISO(), -ATTENDANCE_DAYS_LOADED);
-  const [gym, plans, members, memberships, payments, attendance, expenses] = await Promise.all([
+  const [gym, plans, members, memberships, payments, attendance, expenses, team] = await Promise.all([
     supabase.from("gyms").select("name, address, phone, gstin, subscription_plan, subscription_ends_on").maybeSingle(),
     supabase.from("plans").select("id, name, days, price").eq("active", true).order("days"),
     fetchAll<MemberRow>((a, b) => supabase.from("member_overview").select("id, code, name, phone, color, joined_on, plan, plan_days, plan_price, start_date, expiry_date, balance, suspended, emergency_contact, date_of_birth, notes").order("created_at", { ascending: false }).range(a, b)),
     fetchAll<{ id: string; member_id: string; plan_name: string; price: number; start_date: string; end_date: string; created_at: string }>((a, b) => supabase.from("memberships").select("id, member_id, plan_name, price, start_date, end_date, created_at").order("start_date").range(a, b)),
     fetchAll<PaymentRow>((a, b) => supabase.from("payments").select("id, member_id, amount, method, paid_at, note").order("paid_at").range(a, b)),
-    fetchAll<{ id: string; member_id: string; checked_in_at: string }>((a, b) => supabase.from("attendance").select("id, member_id, checked_in_at").gte("checked_in_at", new Date(`${since}T00:00:00`).toISOString()).order("checked_in_at").range(a, b)),
+    fetchAll<{ id: string; member_id: string; checked_in_at: string; created_by: string | null }>((a, b) => supabase.from("attendance").select("id, member_id, checked_in_at, created_by").gte("checked_in_at", new Date(`${since}T00:00:00`).toISOString()).order("checked_in_at").range(a, b)),
     fetchAll<{ id: string; spent_on: string; category: string; amount: number; method: string; note: string }>((a, b) => supabase.from("expenses").select("id, spent_on, category, amount, method, note").order("spent_on").range(a, b)),
+    supabase.from("staff").select("user_id, name"),
   ]);
   if (gym.error) throw new Error(gym.error.message);
   if (plans.error) throw new Error(plans.error.message);
@@ -56,6 +57,7 @@ export async function loadAppData(): Promise<AppData> {
     notes: m.notes,
   }));
   const nameOf = new Map(memberList.map((m) => [m.id, m.name]));
+  const staffName = new Map((team.data ?? []).map((s) => [s.user_id as string, s.name as string]));
 
   // A payment is "Paid" when, at that moment, everything charged so far was covered.
   const charges = new Map<string, { date: string; price: number }[]>();
@@ -74,7 +76,7 @@ export async function loadAppData(): Promise<AppData> {
     members: memberList,
     renewals: memberships.map((x) => ({ id: x.id, memberId: x.member_id, plan: x.plan_name, startDate: x.start_date, expiryDate: x.end_date, price: x.price, createdAt: local(x.created_at) })),
     payments: paymentList,
-    attendance: attendance.map((a) => ({ id: a.id, memberId: a.member_id, memberName: nameOf.get(a.member_id) ?? "Member", at: local(a.checked_in_at) })),
+    attendance: attendance.map((a) => ({ id: a.id, memberId: a.member_id, memberName: nameOf.get(a.member_id) ?? "Member", at: local(a.checked_in_at), by: a.created_by ? staffName.get(a.created_by) ?? "Removed login" : "" })),
     expenses: expenses.map((e) => ({ id: e.id, date: e.spent_on, category: e.category, amount: e.amount, method: e.method, note: e.note })),
   };
 }
@@ -128,6 +130,11 @@ export const db = {
 
   async checkIn(memberId: string) {
     const { data, error } = await supabase.from("attendance").insert({ member_id: memberId }).select("id, checked_in_at").single();
+    if (error?.message === "already_checked_in") {
+      // details = "<local time>|<who marked it>", see the attendance_once_a_day migration
+      const [at, by] = (error.details ?? "").split("|");
+      throw new Error(`Already checked in today${at ? ` at ${formatTime(at)}` : ""}${by ? ` by ${by}` : ""}.`);
+    }
     if (error) fail(error, "Couldn't save the check-in. Try again.");
     return { id: data.id as string, at: local(data.checked_in_at as string) };
   },
