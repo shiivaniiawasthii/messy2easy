@@ -26,7 +26,7 @@ type PaymentRow = { id: string; member_id: string; amount: number; method: strin
 export async function loadAppData(): Promise<AppData> {
   const since = addDays(todayISO(), -ATTENDANCE_DAYS_LOADED);
   const [gym, plans, members, memberships, payments, attendance, expenses] = await Promise.all([
-    supabase.from("gyms").select("name, address, phone, gstin").maybeSingle(),
+    supabase.from("gyms").select("name, address, phone, gstin, subscription_plan, subscription_ends_on").maybeSingle(),
     supabase.from("plans").select("id, name, days, price").eq("active", true).order("days"),
     fetchAll<MemberRow>((a, b) => supabase.from("member_overview").select("id, code, name, phone, color, joined_on, plan, plan_days, plan_price, start_date, expiry_date, balance, suspended, emergency_contact, date_of_birth, notes").order("created_at", { ascending: false }).range(a, b)),
     fetchAll<{ id: string; member_id: string; plan_name: string; price: number; start_date: string; end_date: string; created_at: string }>((a, b) => supabase.from("memberships").select("id, member_id, plan_name, price, start_date, end_date, created_at").order("start_date").range(a, b)),
@@ -69,7 +69,7 @@ export async function loadAppData(): Promise<AppData> {
   });
 
   return {
-    gym: { name: gym.data?.name ?? "", address: gym.data?.address ?? "", phone: gym.data?.phone ?? "", gstin: gym.data?.gstin ?? "" },
+    gym: { name: gym.data?.name ?? "", address: gym.data?.address ?? "", phone: gym.data?.phone ?? "", gstin: gym.data?.gstin ?? "", subscriptionPlan: gym.data?.subscription_plan ?? "Pilot", subscriptionEndsOn: gym.data?.subscription_ends_on ?? "" },
     plans: (plans.data ?? []).map((p) => ({ id: p.id, name: p.name, days: p.days, price: p.price })),
     members: memberList,
     renewals: memberships.map((x) => ({ id: x.id, memberId: x.member_id, plan: x.plan_name, startDate: x.start_date, expiryDate: x.end_date, price: x.price, createdAt: local(x.created_at) })),

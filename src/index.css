@@ -850,6 +850,27 @@ button.recent-row:hover strong { color: var(--primary); }
   .user-card { margin-top: 10px; padding-top: 12px; }
 }
 
+/* Admin: subscriptions */
+.admin-sub { display: flex; align-items: center; gap: 10px; padding: 8px 0 2px; color: var(--muted); font-size: 11px; }
+.admin-gym.paused { background: #fcfcfb; }
+.admin-gym.paused .admin-gym-head .brand-mark { background: var(--subtle); }
+.admin-gym-actions { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 12px; margin-top: 4px; border-top: 1px solid var(--line); }
+.admin-gym-actions .btn:last-child { margin-left: auto; color: var(--danger); }
+.owner-actions { display: flex; gap: 6px; }
+.sub-box { display: grid; gap: 10px; margin-top: 14px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: #fbfcfb; }
+.sub-box > strong { font-size: 13px; }
+.sub-box .form-row { margin: 0; }
+.extend-tabs { width: max-content; max-width: 100%; }
+.delete-warning { display: flex; gap: 10px; padding: 12px; margin-bottom: 14px; border-radius: 10px; background: var(--danger-soft); color: var(--danger); }
+.delete-warning p { font-size: 12px; line-height: 1.5; color: #7d2a26; }
+.login-icon.paused { background: var(--warning-soft); color: var(--warning); }
+.trial-card.ending { border-color: #efd29b; background: var(--warning-soft); }
+@media (max-width: 760px) {
+  .owner-actions { flex-direction: column; }
+  .admin-gym-actions .btn { flex: 1; }
+  .admin-gym-actions .btn:last-child { margin-left: 0; }
+}
+
 /* ===== Phone readability (generated) ===== */
 @media (max-width: 760px) {
   .balance,
@@ -993,7 +1014,8 @@ button.recent-row:hover strong { color: var(--primary); }
   .password-input button,
   .admin-user,
   .admin-gym-head p,
-  .share-details span { font-size: 13px; }
+  .share-details span,
+  .admin-sub { font-size: 13px; }
 
   .field label small { font-size: 11px; }
 

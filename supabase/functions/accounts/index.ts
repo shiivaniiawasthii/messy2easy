@@ -6,6 +6,8 @@
 //   add_staff       owner          → new owner/staff login in their gym
 //   reset_password  owner (own gym) or platform admin → new temporary password
 //   remove_staff    owner (own gym) → delete a login (not themselves, not the last owner)
+//   update_staff    owner (own gym) or platform admin → change name / login mobile
+//   delete_gym      platform admin → delete a gym, all its data and its logins
 //
 // Every new account / reset returns a temporary password. The app shows a
 // "Send on WhatsApp" button, and the user must set their own password on first login.
@@ -137,6 +139,38 @@ Deno.serve(async (req) => {
         const { error } = await admin.auth.admin.deleteUser(target.user_id); // staff row is removed with it
         if (error) throw new UserError("Could not remove this login. Try again.");
         return reply(200, { removed: target.user_id });
+      }
+
+      case "update_staff": {
+        // Name and/or mobile number of a login. Platform admin (any gym) or an owner (own gym).
+        const { data: target } = await admin.from("staff").select("user_id, gym_id, phone").eq("user_id", String(body.userId ?? "")).maybeSingle();
+        if (!target) throw new UserError("Login not found.");
+        if (!platformAdmin && !(isOwner && target.gym_id === me!.gym_id)) return reply(403, { error: "You can't change this login." });
+        const name = requireName(body.name, "name");
+        const phone = requirePhone(body.phone);
+        if (phone !== target.phone) {
+          const { data: taken } = await admin.from("staff").select("user_id").eq("phone", phone).maybeSingle();
+          if (taken) throw new UserError("This mobile number already has a login.");
+          const { error } = await admin.auth.admin.updateUserById(target.user_id, { email: loginEmail(phone), email_confirm: true });
+          if (error) throw new UserError("Could not change the mobile number. Try again.");
+        }
+        const { error } = await admin.from("staff").update({ name, phone }).eq("user_id", target.user_id);
+        if (error) throw new UserError("Could not save. Try again.");
+        return reply(200, { userId: target.user_id, name, phone });
+      }
+
+      case "delete_gym": {
+        // Removes a gym with all its data and every login that belongs to it.
+        if (!platformAdmin) return reply(403, { error: "Only the platform admin can delete gyms." });
+        const gymId = String(body.gymId ?? "");
+        const { data: gym } = await admin.from("gyms").select("id, name").eq("id", gymId).maybeSingle();
+        if (!gym) throw new UserError("Gym not found.");
+        if (String(body.confirmName ?? "").trim() !== gym.name) throw new UserError("Type the gym name exactly to confirm.");
+        const { data: logins } = await admin.from("staff").select("user_id").eq("gym_id", gymId);
+        const { error } = await admin.from("gyms").delete().eq("id", gymId); // members, payments, check-ins… go with it
+        if (error) throw new UserError("Could not delete the gym. Try again.");
+        for (const l of logins ?? []) await admin.auth.admin.deleteUser(l.user_id);
+        return reply(200, { deleted: gymId, loginsRemoved: (logins ?? []).length });
       }
 
       default:

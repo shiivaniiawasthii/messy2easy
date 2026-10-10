@@ -46,7 +46,7 @@ export type Renewal = {
   createdAt: string;
 };
 
-export type GymProfile = { name: string; address: string; phone: string; gstin: string };
+export type GymProfile = { name: string; address: string; phone: string; gstin: string; subscriptionPlan: string; subscriptionEndsOn: string };
 
 export type Expense = { id: string; date: string; category: string; amount: number; method: string; note: string };
 

@@ -1,3 +1,4 @@
+import { formatDate } from "../lib/format";
 import { ConfirmProvider } from "../components/Confirm";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { type Session } from "@supabase/supabase-js";
@@ -26,6 +27,12 @@ async function fetchAccount(session: Session): Promise<Account> {
   ]);
   if (staff.error) throw staff.error;
   if (admin.error) throw admin.error;
+  // No staff row visible usually means the gym's subscription is paused.
+  let pausedGym: Account["pausedGym"] = null;
+  if (!staff.data && !admin.data) {
+    const status = await supabase.rpc("my_gym_status").maybeSingle<{ gym_name: string; active: boolean; subscription_ends_on: string | null; is_open: boolean }>();
+    if (status.data && !status.data.is_open) pausedGym = { gymName: status.data.gym_name, active: status.data.active, endsOn: status.data.subscription_ends_on };
+  }
   return {
     userId,
     email: session.user.email ?? "",
@@ -35,6 +42,7 @@ async function fetchAccount(session: Session): Promise<Account> {
     gymId: staff.data?.gym_id ?? null,
     mustChangePassword: staff.data?.must_change_password ?? false,
     isPlatformAdmin: !!admin.data,
+    pausedGym,
   };
 }
 
@@ -77,6 +85,7 @@ function Gate() {
   const { account } = state;
   if (account.role && account.mustChangePassword) return <ChangePassword name={account.name} onDone={() => void load(lastSession.current)} onSignOut={signOut}/>;
   if (!account.role && account.isPlatformAdmin) return <AdminHome email={account.email} onSignOut={signOut}/>;
+  if (!account.role && account.pausedGym) return <AuthLayout><div className="login-icon paused"><Icon name="clock" size={25}/></div><h1>Subscription paused</h1><p>{account.pausedGym.gymName}’s Gym Manager {account.pausedGym.active && account.pausedGym.endsOn ? `subscription ended on ${formatDate(account.pausedGym.endsOn)}` : "subscription is paused"}. Your data is safe. Please contact Messy2Easy Solutions to continue.</p><div className="auth-actions"><Button variant="secondary" onClick={signOut}>Sign out</Button></div></AuthLayout>;
   if (!account.role) return <AuthLayout><div className="login-icon"><Icon name="users" size={25}/></div><h1>Not linked to a gym</h1><p>Your login works, but it isn’t part of any gym yet (or it was turned off). Ask your gym owner to add you, or contact Messy2Easy support.</p><div className="auth-actions"><Button variant="secondary" onClick={signOut}>Sign out</Button></div></AuthLayout>;
   return <App account={account} onSignOut={signOut}/>;
 }

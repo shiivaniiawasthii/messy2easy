@@ -22,6 +22,8 @@ export type Account = {
   gymId: string | null;
   mustChangePassword: boolean;
   isPlatformAdmin: boolean;
+  /** Set when the person belongs to a gym whose subscription is paused or expired. */
+  pausedGym: { gymName: string; active: boolean; endsOn: string | null } | null;
 };
 
 /** Turns Supabase Auth errors into short messages a gym owner understands. */
