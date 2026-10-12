@@ -485,7 +485,7 @@ button.table-row:hover { background: #fafcfb; }
   .settings-nav .icon { display: none; }
   .settings-section { padding: 17px; }
   .mobile-nav { position: fixed; display: flex; align-items: center; justify-content: space-around; inset: auto 0 0; height: 68px; z-index: 30; background: rgba(255,255,255,.97); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); backdrop-filter: blur(12px); }
-  .mobile-nav button { width: 20%; border: 0; background: transparent; color: var(--subtle); display: grid; justify-items: center; gap: 3px; font-size: 9px; cursor: pointer; }
+  .mobile-nav button { flex: 1 1 0; min-width: 0; border: 0; background: transparent; color: var(--subtle); display: grid; justify-items: center; gap: 3px; font-size: 9px; cursor: pointer; }
   .mobile-nav button.active { color: var(--primary); }
   .mobile-nav .icon { width: 21px; height: 21px; }
   .login-page { padding: 20px 16px; }

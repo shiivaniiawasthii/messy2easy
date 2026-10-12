@@ -14,12 +14,13 @@ export type Screen =
   | "member-payments"
   | "earnings";
 
-type NavItem = { id: Screen; label: string; icon: IconName; section: "workspace" | "manage"; ownerOnly?: boolean };
+/** `short` is the label in the phone bottom bar, where space is tight. */
+type NavItem = { id: Screen; label: string; short?: string; icon: IconName; section: "workspace" | "manage"; ownerOnly?: boolean };
 
 export const navItems: NavItem[] = [
-  { id: "dashboard", label: "Dashboard", icon: "home", section: "workspace" },
+  { id: "dashboard", label: "Dashboard", short: "Home", icon: "home", section: "workspace" },
   { id: "members", label: "Members", icon: "users", section: "workspace" },
-  { id: "attendance", label: "Attendance", icon: "check", section: "workspace" },
+  { id: "attendance", label: "Attendance", short: "Check-in", icon: "check", section: "workspace" },
   { id: "payments", label: "Payments", icon: "card", section: "workspace" },
   { id: "earnings", label: "Earnings", icon: "chart", section: "workspace", ownerOnly: true },
   { id: "renewals", label: "Renewals", icon: "refresh", section: "workspace" },
