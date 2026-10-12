@@ -40,7 +40,7 @@ export function RecordPaymentModal({ initialMemberId, onClose }: { initialMember
     if (!Number.isInteger(value) || value <= 0) return setError("Enter an amount in whole rupees, greater than ₹0.");
     if (value > prev) return setError(`Amount is more than the outstanding balance of ${formatMoney(prev)}.`);
     if (!date || date > today) return setError("Transaction date cannot be in the future.");
-    const payment: Payment = { id: newId(), memberId: member.id, memberName: member.name, paidAt: date === today ? nowLocal() : `${date}T12:00:00`, method, amount: value, status: prev - value <= 0 ? "Paid" : "Partial", description: `${member.plan} membership` };
+    const payment: Payment = { id: newId(), memberId: member.id, memberName: member.name, paidAt: date === today ? nowLocal() : `${date}T12:00:00`, method, amount: value, status: prev - value <= 0 ? "Paid" : "Partial", description: `${member.plan} membership`, addedBy: "", addedAt: nowLocal() };
     setError("");
     setSaving(true);
     try {

@@ -31,6 +31,9 @@ export type Payment = {
   amount: number;
   status: "Paid" | "Partial";
   description: string;
+  /** Owner/staff who entered it ("" if unknown) and when it was entered. */
+  addedBy: string;
+  addedAt: string;
 };
 
 /** One check-in. `by` is the name of the owner/staff who marked it ("" if unknown). */

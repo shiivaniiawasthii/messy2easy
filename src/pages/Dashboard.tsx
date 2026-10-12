@@ -24,6 +24,7 @@ export function InactiveMembersModal({ members, lastVisit, onClose }: { members:
 
 export function Dashboard({ setScreen }: { setScreen: (s: Screen) => void }) {
   const { data, today, viewMember, openRenewals, openPaymentsTab, account } = useStore();
+  const isOwner = account.role === "owner"; // staff only receive the payments they recorded
   const [period, setPeriod] = useState<Period>("month");
   const [showInactive, setShowInactive] = useState(false);
   const now = new Date();
@@ -99,14 +100,14 @@ export function Dashboard({ setScreen }: { setScreen: (s: Screen) => void }) {
   return <div className="page">
     <PageHeader eyebrow={`${DAYS_LONG[now.getDay()].toUpperCase()}, ${now.getDate()} ${MONTHS_LONG[now.getMonth()].toUpperCase()}`} title={`Good ${hour < 12 ? "morning" : hour < 17 ? "afternoon" : "evening"}, ${(account.name || "there").split(" ")[0]}`} subtitle={`Here’s how ${data.gym.name} is doing.`} action={<div className="filter-tabs period-tabs" role="tablist" aria-label="Period">{PERIODS.map(([id, label]) => <button key={id} role="tab" aria-selected={period === id} className={period === id ? "active" : ""} onClick={() => setPeriod(id)}>{label}</button>)}</div>}/>
     <section className="stats-grid">
-      <StatCard label="Collections" value={formatMoney(collected)} icon="wallet" detail={<Trend current={collected} previous={sumPayments(previous)} vs={vs} format={formatMoney}/>} onClick={() => setScreen("payments")}/>
+      <StatCard label={isOwner ? "Collections" : "Your collections"} value={formatMoney(collected)} icon="wallet" detail={<Trend current={collected} previous={sumPayments(previous)} vs={vs} format={formatMoney}/>} onClick={() => setScreen("payments")}/>
       <StatCard label="Renewals" value={String(countRenewals(current))} icon="refresh" tone="blue" detail={<Trend current={countRenewals(current)} previous={countRenewals(previous)} vs={vs}/>} onClick={() => setScreen("renewals")}/>
       <StatCard label="New members" value={String(countJoined(current))} icon="users" tone="violet" detail={<Trend current={countJoined(current)} previous={countJoined(previous)} vs={vs}/>} onClick={() => setScreen("members")}/>
       <StatCard label="Check-ins" value={String(countCheckins(current))} icon="check" tone="amber" detail={<Trend current={countCheckins(current)} previous={countCheckins(previous)} vs={vs}/>} onClick={() => setScreen("attendance")}/>
     </section>
     <section className="dashboard-grid">
       <div className="panel collection-panel">
-        <div className="panel-head"><div><h2>Collections</h2><p>{chartTitle}</p></div><div className="value-total"><strong>{formatMoney(buckets.reduce((s, b) => s + b.total, 0))}</strong><small>{best.total > 0 ? `Best: ${period === "year" ? best.label : `${best.label} ${MONTHS[parseDate(best.key).getMonth()]}`} · ${formatMoney(best.total)}` : "No payments yet"}</small></div></div>
+        <div className="panel-head"><div><h2>{isOwner ? "Collections" : "Your collections"}</h2><p>{chartTitle}</p></div><div className="value-total"><strong>{formatMoney(buckets.reduce((s, b) => s + b.total, 0))}</strong><small>{best.total > 0 ? `Best: ${period === "year" ? best.label : `${best.label} ${MONTHS[parseDate(best.key).getMonth()]}`} · ${formatMoney(best.total)}` : "No payments yet"}</small></div></div>
         <BarChart buckets={buckets} dense={buckets.length > 14} format={formatShortMoney} highlight={(b, i) => i === buckets.length - 1} ariaLabel="Collections chart"/>
         <div className="insight-facts"><span>Average <strong>{formatMoney(Math.round(buckets.reduce((s, b) => s + b.total, 0) / Math.max(1, buckets.length)))}</strong> per {period === "year" ? "month" : "day"}</span><span>Still to collect <strong className="amber-text">{formatMoney(withDues.reduce((s, m) => s + m.balance, 0))}</strong></span><span>Collected via UPI <strong>{collected ? Math.round((data.payments.filter((p) => inRange(p.paidAt, current) && p.method === "UPI").reduce((s, p) => s + p.amount, 0) / collected) * 100) : 0}%</strong></span></div>
       </div>
@@ -125,7 +126,7 @@ export function Dashboard({ setScreen }: { setScreen: (s: Screen) => void }) {
       <div className="panel insight-panel">
         <div className="panel-head"><div><h2>Renewals & plans</h2><p>{period === "today" ? "Last 30 days" : `${PERIODS.find(([p]) => p === period)?.[1]}`}</p></div></div>
         <div className="renew-rate"><div><strong className={renewRate === null ? "" : renewRate >= 70 ? "green-text" : renewRate >= 50 ? "amber-text" : "danger-text"}>{renewRate === null ? "—" : `${renewRate}%`}</strong><span>renewal rate</span></div><div className="renew-rate-bar"><i style={{width: `${renewRate ?? 0}%`}}/></div><small>{ended.length ? `${renewedCount} of ${ended.length} memberships that ended were renewed · ${ended.length - renewedCount} didn’t come back` : "No memberships ended in this period."}</small></div>
-        <div className="plan-split"><span className="plan-split-title">Money by plan</span>{planRows.length === 0 && <small className="field-help">No payments in this period.</small>}{planRows.map(([plan, total]) => <div className="plan-split-row" key={plan}><span>{plan}</span><span className="plan-bar"><i style={{width: `${Math.max(4, Math.round((total / planMax) * 100))}%`}}/></span><strong>{formatMoney(total)}</strong><small>{Math.round((total / Math.max(1, planTotal)) * 100)}%</small></div>)}</div>
+        {isOwner && <div className="plan-split"><span className="plan-split-title">Money by plan</span>{planRows.length === 0 && <small className="field-help">No payments in this period.</small>}{planRows.map(([plan, total]) => <div className="plan-split-row" key={plan}><span>{plan}</span><span className="plan-bar"><i style={{width: `${Math.max(4, Math.round((total / planMax) * 100))}%`}}/></span><strong>{formatMoney(total)}</strong><small>{Math.round((total / Math.max(1, planTotal)) * 100)}%</small></div>)}</div>}
       </div>
     </section>
     <section className="panel activity-panel">

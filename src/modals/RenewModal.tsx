@@ -32,7 +32,7 @@ export function RenewModal({ memberId, onClose }: { memberId: string; onClose: (
     if (!Number.isInteger(paidValue) || paidValue < 0) return setError("Enter the amount received in whole rupees (0 if nothing was paid).");
     if (paidValue > member.balance + price) return setError(`Amount is more than the total due of ${formatMoney(member.balance + price)}.`);
     const createdAt = nowLocal();
-    const payment: Payment | null = paidValue > 0 ? { id: newId(), memberId: member.id, memberName: member.name, paidAt: createdAt, method, amount: paidValue, status: after <= 0 ? "Paid" : "Partial", description: `${plan.name} membership renewal` } : null;
+    const payment: Payment | null = paidValue > 0 ? { id: newId(), memberId: member.id, memberName: member.name, paidAt: createdAt, method, amount: paidValue, status: after <= 0 ? "Paid" : "Partial", description: `${plan.name} membership renewal`, addedBy: "", addedAt: createdAt } : null;
     setError("");
     setSaving(true);
     try {

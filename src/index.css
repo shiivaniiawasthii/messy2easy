@@ -885,6 +885,12 @@ button.recent-row:hover strong { color: var(--primary); }
 .log-row small { font-size: 10px; color: var(--muted); }
 @media (max-width: 760px) { .log-list { padding: 0 14px 6px; } }
 
+/* Payments: who added it (owner) and staff-only views */
+.added-by { display: block; color: var(--muted); font-size: 9px; margin-top: 3px; font-weight: 500; }
+.mini-stats.two { grid-template-columns: repeat(2, 1fr); }
+.staff-note { margin: -4px 0 12px; }
+@media (max-width: 760px) { .mini-stats.two > div { border-bottom: 0 !important; } }
+
 /* ===== Phone readability (generated) ===== */
 @media (max-width: 760px) {
   .balance,
@@ -938,7 +944,8 @@ button.recent-row:hover strong { color: var(--primary); }
   .rank-name small,
   .focus-row small,
   .register .name-col small,
-  .ma-weekday { font-size: 12px; }
+  .ma-weekday,
+  .added-by { font-size: 12px; }
   .nav-label,
   .trial-card small,
   .eyebrow,
