@@ -8,7 +8,7 @@ import { StatCard } from "../components/StatCard";
 import { Avatar, Badge, Button } from "../components/ui";
 import { type Member, type Renewal } from "../data/types";
 import { addDays, DAYS_LONG, diffDays, formatDate, formatMoney, formatPhone, formatShortMoney, initialsOf, MONTHS, MONTHS_LONG, parseDate, parseDateTime, relativeTime } from "../lib/format";
-import { isExpiringSoon, memberStatus, plural } from "../lib/members";
+import { expiredWithin, expiringWithin, lastVisits, membersWithDues, plural, stoppedComing } from "../lib/members";
 import { type Bucket, collectionBuckets, type DateRange, hourLabel, inRange, type Period, periodRanges, PERIODS, shortHour, WEEKDAYS } from "../lib/periods";
 import { type Screen } from "../navigation";
 import { useStore } from "../store/store";
@@ -47,12 +47,11 @@ export function Dashboard({ setScreen }: { setScreen: (s: Screen) => void }) {
   const chartTitle = period === "today" ? "Last 14 days" : period === "month" ? `Each day of ${MONTHS_LONG[now.getMonth()]}` : `Each month of ${now.getFullYear()}`;
 
   // What needs action right now (independent of the period switch).
-  const expiring = data.members.filter((m) => isExpiringSoon(m, today));
-  const lapsed = data.members.filter((m) => memberStatus(m, today) === "Expired" && diffDays(today, m.expiryDate) <= 30);
-  const withDues = data.members.filter((m) => m.balance > 0);
-  const lastVisit = new Map<string, string>();
-  data.attendance.forEach((a) => { const d = a.at.slice(0, 10); if ((lastVisit.get(a.memberId) ?? "") < d) lastVisit.set(a.memberId, d); });
-  const inactive = data.members.filter((m) => memberStatus(m, today) === "Active" && diffDays(today, lastVisit.get(m.id) ?? m.joined) >= 14).sort((a, b) => (lastVisit.get(a.id) ?? "").localeCompare(lastVisit.get(b.id) ?? ""));
+  const expiring = expiringWithin(data.members, today, 7);
+  const lapsed = expiredWithin(data.members, today, 30);
+  const withDues = membersWithDues(data.members);
+  const lastVisit = lastVisits(data);
+  const inactive = stoppedComing(data, today, 14, lastVisit);
   const focus: FocusItem[] = [
     { id: "expiring", icon: "clock", tone: "amber", title: `${plural(expiring.length, "membership")} ending this week`, detail: "Remind them to renew before they lapse", value: formatMoney(expiring.reduce((s, m) => s + m.planPrice, 0)), onClick: () => openRenewals("expiring") },
     { id: "lapsed", icon: "refresh", tone: "rose", title: `${plural(lapsed.length, "member")} didn’t renew`, detail: "Expired in the last 30 days — call to win them back", value: formatMoney(lapsed.reduce((s, m) => s + m.planPrice, 0)), onClick: () => openRenewals("expired") },

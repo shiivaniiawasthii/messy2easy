@@ -9,6 +9,7 @@ pnpm install
 pnpm dev               # http://localhost:8443 (also on the LAN for phone testing)
 pnpm exec tsc --noEmit # type-check (vite build does not type-check)
 pnpm build             # production build into dist/
+pnpm test              # unit tests (node --test, src/**/*.test.ts)
 ```
 
 Needs Node 20.19+ (Node 22/24 recommended).
@@ -23,11 +24,13 @@ src/
   index.css             all styles (plain CSS classes; Tailwind is imported only for its base reset)
   store/store.ts        StoreContext + useStore(), localStorage load/save
   data/types.ts         data types (Member, Payment, ...)
-  data/db.ts            load + save gym data in Supabase
+  data/appData.ts       read a gym's rows + turn them into AppData (shared with the server)
+  data/db.ts            load (via appData.ts) + save gym data in Supabase
   auth/                 login, set-password screen, AuthGate
   admin/                Messy2Easy platform admin (gyms + owners)
   lib/                  pure helpers: format.ts (dates, money, phone), members.ts (status, dues,
-                        rankings), periods.ts (date ranges, chart buckets, financial year), download.ts (CSV)
+                        rankings, "needs attention" lists), periods.ts (date ranges, chart buckets, financial year), download.ts (CSV),
+                        summary.ts + summaryText.ts (owner daily summary), notifications.ts (calls the function)
   components/           reusable UI: Icon, Button/Badge/Avatar, Modal, SearchBox, Pagination, charts...
   layout/               Sidebar (desktop), Topbar, MobileNav (phone bottom bar + "More" sheet)
   pages/                one file per screen: Dashboard, Members, MemberProfile, MemberForm, Attendance,
@@ -43,12 +46,13 @@ src/
 - Check-ins older than `ATTENDANCE_DAYS_LOADED` (120 days) are not loaded yet.
 - Derived values (status, balance, totals, charts) are computed on render; the database view `member_overview` computes balance/status/expiry server-side.
 - Accounts (create gym + owner, invite staff, reset password, remove) go through the `accounts` Edge Function (`supabase/functions/accounts`), which uses the service-role key on the server only.
+- Owner daily summary: `notifications` Edge Function + Supabase cron every 15 min (see README "Owner notifications"). It imports `src/data/appData.ts`, `src/lib/summary.ts` and their imports directly, so those files use explicit `.ts` import extensions and no browser-only APIs.
 
 ## Supabase
 
 ```bash
 npx supabase db push                               # apply new files in supabase/migrations
-npx supabase functions deploy accounts --use-api   # deploy the Edge Function
+npx supabase functions deploy accounts --use-api   # deploy an Edge Function (also: notifications --no-verify-jwt)
 ```
 
 Env: `.env.local` with `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` (see `.env.example`). Never put the service-role key or DB password in a `VITE_` variable.

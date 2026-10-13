@@ -23,6 +23,15 @@ export function nowLocal() {
   return toLocalDateTime(new Date());
 }
 
+/** Every gym runs on India time. The server (UTC) must use this, not the machine's clock. */
+export const GYM_TIME_ZONE = "Asia/Kolkata";
+
+/** A moment as local "YYYY-MM-DDTHH:MM:SS" in the given time zone (independent of the machine's zone). */
+export function zonedDateTime(d: Date, timeZone = GYM_TIME_ZONE) {
+  const parts = Object.fromEntries(new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23" }).formatToParts(d).map((p) => [p.type, p.value]));
+  return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}`;
+}
+
 export function parseDate(value: string) {
   const [y, m, d] = value.slice(0, 10).split("-").map(Number);
   return new Date(y, m - 1, d);

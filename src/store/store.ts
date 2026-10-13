@@ -18,6 +18,8 @@ export type Store = {
   openRenew: (memberId: string) => void;
   openRenewals: (tab: RenewalTab) => void;
   openPaymentsTab: (tab: "All" | PaymentState) => void;
+  /** Owner only: Settings → Notifications. */
+  openNotificationSettings: () => void;
 };
 
 export const StoreContext = createContext<Store | null>(null);

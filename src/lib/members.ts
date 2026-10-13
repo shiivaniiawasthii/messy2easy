@@ -1,5 +1,6 @@
-import { type AppData, type Member } from "../data/types";
-import { diffDays, formatDate, formatMoney } from "./format";
+// Explicit .ts extensions: this file is also used by the server (Supabase Edge Function, Deno).
+import { type AppData, type Member } from "../data/types.ts";
+import { diffDays, formatDate, formatMoney } from "./format.ts";
 
 export type MemberStatus = "Active" | "Expired" | "Suspended";
 
@@ -15,8 +16,34 @@ export function paymentState(m: Member): PaymentState {
   return m.balance >= m.planPrice ? "Unpaid" : "Partial";
 }
 
-export function isExpiringSoon(m: Member, today: string) {
-  return memberStatus(m, today) === "Active" && diffDays(m.expiryDate, today) <= 7;
+export function isExpiringSoon(m: Member, today: string, withinDays = 7) {
+  return memberStatus(m, today) === "Active" && diffDays(m.expiryDate, today) <= withinDays;
+}
+
+// --- "What needs attention" lists. Shared by the Dashboard, Renewals and the daily summary,
+// so the numbers always match. ---
+
+/** Active memberships ending within `days` (0 = today), soonest first. */
+export const expiringWithin = (members: Member[], today: string, days: number) =>
+  members.filter((m) => isExpiringSoon(m, today, days)).sort((a, b) => a.expiryDate.localeCompare(b.expiryDate));
+
+/** Memberships that ended within the last `days` and were not renewed, most recent first. */
+export const expiredWithin = (members: Member[], today: string, days: number) =>
+  members.filter((m) => memberStatus(m, today) === "Expired" && diffDays(today, m.expiryDate) <= days).sort((a, b) => b.expiryDate.localeCompare(a.expiryDate));
+
+/** Members who owe money, biggest balance first. */
+export const membersWithDues = (members: Member[]) => members.filter((m) => m.balance > 0).sort((a, b) => b.balance - a.balance);
+
+/** Last check-in date ("YYYY-MM-DD") of each member. */
+export function lastVisits(data: AppData) {
+  const last = new Map<string, string>();
+  data.attendance.forEach((a) => { const d = a.at.slice(0, 10); if ((last.get(a.memberId) ?? "") < d) last.set(a.memberId, d); });
+  return last;
+}
+
+/** Active members with no visit for `days`+ days (counting from joining if they never came), longest gap first. */
+export function stoppedComing(data: AppData, today: string, days = 14, last = lastVisits(data)) {
+  return data.members.filter((m) => memberStatus(m, today) === "Active" && diffDays(today, last.get(m.id) ?? m.joined) >= days).sort((a, b) => (last.get(a.id) ?? "").localeCompare(last.get(b.id) ?? ""));
 }
 
 export const statusTone = (s: string) => (s === "Active" ? "success" : s === "Expired" ? "danger" : "neutral");

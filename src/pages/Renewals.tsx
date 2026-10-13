@@ -5,7 +5,7 @@ import { PageHeader } from "../components/PageHeader";
 import { Avatar, Badge, Button } from "../components/ui";
 import { type Member } from "../data/types";
 import { diffDays, digitsOnly, formatDate, formatMoney, formatPhone, initialsOf } from "../lib/format";
-import { expiryLabel, isExpiringSoon, memberStatus, plural } from "../lib/members";
+import { expiredWithin, expiringWithin, expiryLabel, membersWithDues, plural } from "../lib/members";
 import { useStore } from "../store/store";
 import { type RenewalTab } from "../navigation";
 
@@ -14,9 +14,9 @@ export function Renewals({ initialTab = "expiring" }: { initialTab?: RenewalTab 
   const [tab, setTab] = useState<RenewalTab>(initialTab);
   const [showReminders, setShowReminders] = useState(false);
   const lists: Record<RenewalTab, Member[]> = {
-    expiring: data.members.filter((m) => isExpiringSoon(m, today)).sort((a, b) => a.expiryDate.localeCompare(b.expiryDate)),
-    expired: data.members.filter((m) => memberStatus(m, today) === "Expired").sort((a, b) => b.expiryDate.localeCompare(a.expiryDate)),
-    unpaid: data.members.filter((m) => m.balance > 0).sort((a, b) => b.balance - a.balance),
+    expiring: expiringWithin(data.members, today, 7),
+    expired: expiredWithin(data.members, today, Infinity),
+    unpaid: membersWithDues(data.members),
   };
   const list = lists[tab];
   const info: Record<RenewalTab, [string, string]> = {

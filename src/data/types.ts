@@ -1,4 +1,5 @@
-// Shapes the app works with. They are filled from the database (see db.ts).
+// Shapes the app works with. They are filled from the database (see appData.ts / db.ts).
+// Also used by the server (Supabase Edge Function), so keep this file free of imports.
 // Dates are local "YYYY-MM-DD"; timestamps local "YYYY-MM-DDTHH:MM:SS" (IST).
 
 export type Plan = { id: string; name: string; days: number; price: number };

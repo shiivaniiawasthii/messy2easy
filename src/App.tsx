@@ -22,7 +22,7 @@ import { defaultMemberView, Members, type MemberView } from "./pages/Members";
 import { Payments } from "./pages/Payments";
 import { Plans } from "./pages/Plans";
 import { Renewals } from "./pages/Renewals";
-import { Settings } from "./pages/Settings";
+import { Settings, type SettingsSection } from "./pages/Settings";
 import { type Store, StoreContext } from "./store/store";
 
 export default function App({ account, onSignOut }: { account: Account; onSignOut: () => void }) {
@@ -38,6 +38,7 @@ export default function App({ account, onSignOut }: { account: Account; onSignOu
   // Starting tab when a dashboard shortcut opens Renewals or Payments.
   const [renewalsTab, setRenewalsTab] = useState<RenewalTab>("expiring");
   const [paymentsTab, setPaymentsTab] = useState<"All" | PaymentState>("All");
+  const [settingsSection, setSettingsSection] = useState<SettingsSection>("gym");
   const [pageKey, setPageKey] = useState(0);
   // Where the profile's back button returns to.
   const [profileFrom, setProfileFrom] = useState<Screen>("members");
@@ -62,7 +63,7 @@ export default function App({ account, onSignOut }: { account: Account; onSignOu
   }, [reload]);
 
   const go = (s: Screen) => { setScreenState(s); window.scrollTo(0, 0); };
-  const setScreen = (s: Screen) => { if (s === "member-form") setEditingMemberId(null); if (s === "renewals" || s === "payments") { setRenewalsTab("expiring"); setPaymentsTab("All"); setPageKey((k) => k + 1); } go(s); };
+  const setScreen = (s: Screen) => { if (s === "member-form") setEditingMemberId(null); if (s === "settings") { setSettingsSection("gym"); setPageKey((k) => k + 1); } if (s === "renewals" || s === "payments") { setRenewalsTab("expiring"); setPaymentsTab("All"); setPageKey((k) => k + 1); } go(s); };
   if (!data) return <div className="app-loading"><span className="brand-mark">M</span>{loadError ? <><p>{loadError}</p><Button onClick={() => void reload()}>Try again</Button><Button variant="ghost" onClick={onSignOut}>Sign out</Button></> : <><Icon name="refresh" size={20}/><p>Loading your gym…</p></>}</div>;
 
   const store: Store = {
@@ -82,6 +83,7 @@ export default function App({ account, onSignOut }: { account: Account; onSignOu
     openRenew: (memberId) => { setPaymentModal(null); setRenewMemberId(memberId); },
     openRenewals: (tab) => { setRenewalsTab(tab); setPageKey((k) => k + 1); go("renewals"); },
     openPaymentsTab: (tab) => { setPaymentsTab(tab); setPageKey((k) => k + 1); go("payments"); },
+    openNotificationSettings: () => { setSettingsSection("notifications"); setPageKey((k) => k + 1); go("settings"); },
   };
 
   const render = () => {
@@ -96,7 +98,7 @@ export default function App({ account, onSignOut }: { account: Account; onSignOu
     if (screen === "profile") return <MemberProfile key={selectedMemberId ?? "none"} memberId={selectedMemberId} setScreen={setScreen} backTo={profileFrom}/>;
     if (screen === "member-payments") return <MemberPayments memberId={selectedMemberId} setScreen={setScreen}/>;
     if (screen === "member-form") return <MemberForm key={editingMemberId ?? "new"} editingId={editingMemberId} setScreen={setScreen}/>;
-    return <Settings/>;
+    return <Settings key={pageKey} initialSection={settingsSection}/>;
   };
   return <StoreContext.Provider value={store}>
     <div className="app-shell"><Sidebar screen={screen} setScreen={setScreen}/><div className="main-shell"><Topbar setScreen={setScreen} onSearch={(q) => { setMemberQuery(q); setMemberView(defaultMemberView); setScreen("members"); }}/><main>{render()}</main></div><MobileNav screen={screen} setScreen={setScreen}/></div>

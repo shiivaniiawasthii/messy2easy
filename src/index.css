@@ -891,6 +891,27 @@ button.recent-row:hover strong { color: var(--primary); }
 .staff-note { margin: -4px 0 12px; }
 @media (max-width: 760px) { .mini-stats.two > div { border-bottom: 0 !important; } }
 
+/* Owner notifications (Settings → Notifications, bell popup) */
+.notify-settings .plan-options { margin-top: 10px; }
+.notify-switch { grid-template-columns: 1fr; }
+.notify-channels { grid-template-columns: 1fr 1fr; }
+.notify-heading { font-size: 12px; margin-top: 20px; }
+.notify-fields { margin-top: 16px; grid-template-columns: repeat(3, 1fr); }
+.notify-warning { display: flex; align-items: center; gap: 7px; margin-top: 10px; padding: 9px 12px; border-radius: 9px; background: var(--warning-soft); color: var(--warning); font-size: 10px; }
+.notify-status { margin-top: 18px; padding: 12px 14px; border-radius: 10px; background: var(--canvas); display: grid; gap: 4px; }
+.notify-status strong { font-size: 11px; }
+.notify-status small { font-size: 10px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.notify-results { margin-top: 10px; }
+.notify-results p { font-size: 11px; margin: 4px 0 0; }
+.summary-line { display: flex; align-items: center; gap: 8px; padding: 10px 12px; margin-bottom: 12px; border-radius: 10px; background: var(--primary-soft); color: var(--primary-dark); font-size: 11px; font-weight: 600; }
+.summary-line span { flex: 1; }
+.summary-line button { border: 0; background: transparent; color: var(--primary); font-weight: 700; font-size: 11px; cursor: pointer; text-decoration: underline; }
+@media (max-width: 760px) {
+  .notify-fields, .notify-channels { grid-template-columns: 1fr; }
+  .notify-settings .section-save { flex-direction: column-reverse; }
+  .notify-settings .section-save .btn { width: 100%; justify-content: center; }
+}
+
 /* ===== Phone readability (generated) ===== */
 @media (max-width: 760px) {
   .balance,
@@ -994,7 +1015,9 @@ button.recent-row:hover strong { color: var(--primary); }
   .ma-legend,
   .ma-month,
   .already-in small,
-  .log-row small { font-size: 12.5px; }
+  .log-row small,
+  .notify-warning,
+  .notify-status small { font-size: 12.5px; }
   .nav-item em,
   .user-card small,
   .stat-detail,
@@ -1038,7 +1061,11 @@ button.recent-row:hover strong { color: var(--primary); }
   .admin-user,
   .admin-gym-head p,
   .share-details span,
-  .admin-sub { font-size: 13px; }
+  .admin-sub,
+  .notify-status strong,
+  .notify-results p,
+  .summary-line,
+  .summary-line button { font-size: 13px; }
 
   .field label small { font-size: 11px; }
 
