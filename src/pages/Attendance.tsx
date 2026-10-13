@@ -46,7 +46,7 @@ export function Attendance() {
   };
   const reset = () => { setQuery(""); setSelectedId(null); setCheckedIn(null); setCheckError(""); };
   return <div className="page">
-    <PageHeader eyebrow="ATTENDANCE" title="Fast check-in" subtitle="Search a member and confirm their entry in seconds." action={<div className="sync-note"><i/><span>Synced just now</span></div>}/>
+    <PageHeader eyebrow="ATTENDANCE" title="Fast check-in" subtitle="Search a member and confirm their entry in seconds."/>
     <div className="attendance-grid">
       <section className="panel checkin-panel">
         <div className="checkin-title"><span className="large-icon"><Icon name="check" size={24}/></span><div><h2>Member check-in</h2><p>Enter name or mobile number</p></div></div>
@@ -60,7 +60,6 @@ export function Attendance() {
           {matches.length > 1 && <div className="expiry-list">{matches.filter((m) => m.id !== result.id).map((m) => <button className="expiry-row" key={m.id} onClick={() => setSelectedId(m.id)}><Avatar initials={initialsOf(m.name)} color={m.color} small/><span><strong>{m.name}</strong><small>{formatPhone(m.phone)}</small></span><div><strong>Select</strong></div></button>)}</div>}
         </div>}
         {checkedIn && <div className="success-state"><span className="success-icon"><Icon name="check" size={28}/></span><h2>Check-in successful</h2><p>{checkedIn.name} checked in at {formatTime(checkedIn.at)}</p><Button variant="secondary" onClick={reset}>Check in another member</Button></div>}
-        <div className="future-strip"><span><Icon name="sparkles" size={17}/></span><div><strong>QR attendance is coming soon</strong><p>Members will be able to scan and check in themselves.</p></div><Badge>Future</Badge></div>
       </section>
       <section className="panel today-panel">
         <div className="panel-head"><div><h2>Today’s attendance</h2><p>{plural(todayList.length, "total check-in")}</p></div><Badge tone="success"><i className="live-dot"/> Live</Badge></div>
