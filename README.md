@@ -10,7 +10,22 @@ pnpm test       # unit tests (daily summary)
 pnpm build
 ```
 
+## Reports and activity (free, no setup)
+
+- **Bell → Activity (owner only):** every change by the owner or staff — members added/edited/deleted, payments
+  recorded/edited/deleted, renewals, check-ins, plans, expenses, gym profile — with who did it and when.
+  Database triggers fill `activity_log` (`supabase/migrations/20261016090000_activity_log.sql`), so nothing is missed
+  whatever screen or API made the change. The red number counts new actions by other people (check-ins excluded).
+  Entries older than 180 days are removed daily.
+- **Bell → Report and Settings → Reports (owner only):** today / yesterday / this month / last month.
+  **Download Excel** (sheets: Summary, Payments, Check-ins, Expenses, Members, Follow up) and
+  **Share on WhatsApp** (opens the owner's own WhatsApp with the summary text; no API, no cost).
+  Code: `src/lib/report.ts`, `src/components/ReportPanel.tsx`. The Excel library (SheetJS, from cdn.sheetjs.com)
+  loads only when a report is downloaded.
+
 ## Owner notifications (daily summary)
+
+> Optional, paid channels. The settings stay hidden in the app until Email or WhatsApp keys are added.
 
 Each gym owner can get a daily summary on WhatsApp and/or email at a time they choose
 (Settings → Notifications). Staff never get it and can't see or change the settings.

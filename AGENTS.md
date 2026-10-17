@@ -46,7 +46,8 @@ src/
 - Check-ins older than `ATTENDANCE_DAYS_LOADED` (120 days) are not loaded yet.
 - Derived values (status, balance, totals, charts) are computed on render; the database view `member_overview` computes balance/status/expiry server-side.
 - Accounts (create gym + owner, invite staff, reset password, remove) go through the `accounts` Edge Function (`supabase/functions/accounts`), which uses the service-role key on the server only.
-- Owner daily summary: `notifications` Edge Function + Supabase cron every 15 min (see README "Owner notifications"). It imports `src/data/appData.ts`, `src/lib/summary.ts` and their imports directly, so those files use explicit `.ts` import extensions and no browser-only APIs.
+- Owner bell: Activity (from the `activity_log` table, filled by triggers; owners only), Needs attention, Report (`src/lib/report.ts` → Excel via SheetJS, loaded on demand, or WhatsApp share text).
+- Owner daily summary (optional, hidden until a channel is configured): `notifications` Edge Function + Supabase cron every 15 min (see README "Owner notifications"). It imports `src/data/appData.ts`, `src/lib/summary.ts` and their imports directly, so those files use explicit `.ts` import extensions and no browser-only APIs.
 
 ## Supabase
 

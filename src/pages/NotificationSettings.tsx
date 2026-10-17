@@ -50,8 +50,9 @@ export function NotificationSettings() {
   };
   useEffect(() => { void load(); }, []);
 
-  if (loadError) return <section className="panel settings-section"><p className="form-error">{loadError}</p></section>;
-  if (!info || !form) return <section className="panel settings-section"><p className="field-help">Loading notification settings…</p></section>;
+  if (loadError) return null;
+  // Automatic WhatsApp/email summary: hidden until Messy2Easy connects a channel (see README).
+  if (!info || !form || (!info.configured.whatsapp && !info.configured.email && !info.saved)) return null;
 
   const set = (patch: Partial<Settings>) => { setForm({ ...form, ...patch }); setSaved(false); setError(""); };
   const save = async () => {

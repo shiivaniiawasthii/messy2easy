@@ -912,6 +912,39 @@ button.recent-row:hover strong { color: var(--primary); }
   .notify-settings .section-save .btn { width: 100%; justify-content: center; }
 }
 
+/* Bell: activity feed, tabs, report */
+.icon-button.notification { position: relative; }
+.bell-count { position: absolute; top: -5px; right: -5px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 99px; background: var(--danger); color: white; font: 700 10px/18px "Manrope"; font-style: normal; text-align: center; box-shadow: 0 0 0 2px white; }
+.bell-tabs { display: flex; gap: 6px; margin-bottom: 14px; border-bottom: 1px solid var(--line); }
+.bell-tabs button { border: 0; background: transparent; padding: 9px 6px 11px; margin-bottom: -1px; border-bottom: 2px solid transparent; color: var(--muted); font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+.bell-tabs button.active { color: var(--primary); border-bottom-color: var(--primary); }
+.bell-tabs em { font-style: normal; min-width: 18px; padding: 1px 6px; border-radius: 99px; background: var(--primary-soft); color: var(--primary); font-size: 10px; }
+.activity-filters { margin-bottom: 8px; }
+.activity-day { font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: var(--subtle); margin: 14px 0 4px; }
+.activity-row { width: 100%; display: flex; align-items: center; gap: 10px; padding: 9px 8px; border: 0; border-radius: 10px; background: transparent; text-align: left; cursor: pointer; color: var(--ink); }
+.activity-row:disabled { cursor: default; }
+.activity-row:not(:disabled):hover { background: var(--canvas); }
+.activity-row.new { background: #f3faf6; box-shadow: inset 3px 0 0 var(--primary); }
+.activity-row .stat-icon { width: 32px; height: 32px; flex: 0 0 auto; }
+.activity-row > span:nth-child(2) { flex: 1; font-size: 12px; line-height: 1.4; }
+.activity-row time { font-size: 10px; color: var(--subtle); white-space: nowrap; }
+.report-periods { margin-bottom: 10px; }
+.report-range { font-size: 11px; color: var(--muted); margin-bottom: 10px; }
+.report-facts { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.report-facts > div { padding: 12px 14px; display: grid; gap: 3px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.report-facts span { font-size: 10px; color: var(--muted); }
+.report-facts strong { font: 700 16px "Manrope"; }
+.report-facts small { font-size: 9px; color: var(--muted); }
+.report-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.report-note { margin-top: 10px; }
+.modal .report-facts { grid-template-columns: repeat(2, 1fr); }
+@media (max-width: 760px) {
+  .report-facts { grid-template-columns: repeat(2, 1fr); }
+  .report-actions .btn { flex: 1 1 100%; justify-content: center; }
+  .report-periods { display: grid; grid-template-columns: repeat(2, 1fr); }
+  .bell-tabs button { font-size: 12px; padding: 9px 4px 11px; }
+}
+
 /* ===== Phone readability (generated) ===== */
 @media (max-width: 760px) {
   .balance,
@@ -966,7 +999,8 @@ button.recent-row:hover strong { color: var(--primary); }
   .focus-row small,
   .register .name-col small,
   .ma-weekday,
-  .added-by { font-size: 12px; }
+  .added-by,
+  .report-facts small { font-size: 12px; }
   .nav-label,
   .trial-card small,
   .eyebrow,
@@ -1017,7 +1051,12 @@ button.recent-row:hover strong { color: var(--primary); }
   .already-in small,
   .log-row small,
   .notify-warning,
-  .notify-status small { font-size: 12.5px; }
+  .notify-status small,
+  .bell-count,
+  .bell-tabs em,
+  .activity-day,
+  .activity-row time,
+  .report-facts span { font-size: 12.5px; }
   .nav-item em,
   .user-card small,
   .stat-detail,
@@ -1065,7 +1104,8 @@ button.recent-row:hover strong { color: var(--primary); }
   .notify-status strong,
   .notify-results p,
   .summary-line,
-  .summary-line button { font-size: 13px; }
+  .summary-line button,
+  .report-range { font-size: 13px; }
 
   .field label small { font-size: 11px; }
 
