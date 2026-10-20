@@ -17,18 +17,30 @@ export const EXPIRY_OPTIONS = ["Any", "Next 7 days", "Next 30 days"];
 
 export const PAYMENT_OPTIONS = ["All", "Paid", "Has dues", "Partial", "Unpaid"];
 
-// Kept in App so filters survive opening a member and coming back.
-export type MemberView = { status: string; plan: string; payment: string; expiry: string; page: number; showFilters: boolean };
+/** How the member was added. "Registration form" = they filled in the gym's public link. */
+export const SOURCE_OPTIONS = ["All", "Registration form", "Added in app"];
 
-export const defaultMemberView: MemberView = { status: "All", plan: "All", payment: "All", expiry: "Any", page: 0, showFilters: false };
+// Kept in App so filters survive opening a member and coming back.
+export type MemberView = { status: string; plan: string; payment: string; expiry: string; source: string; page: number; showFilters: boolean };
+
+export const defaultMemberView: MemberView = { status: "All", plan: "All", payment: "All", expiry: "Any", source: "All", page: 0, showFilters: false };
 
 export function matchesPayment(m: Member, filter: string) {
   if (filter === "All") return true;
+  if (m.pending) return false; // nothing charged yet
   if (filter === "Has dues") return m.balance > 0;
   return paymentState(m) === filter;
 }
 
+const matchesSource = (m: Member, filter: string) => filter === "All" || (filter === "Registration form") === (m.source === "form");
+
 export type FilterChip = { label: string; clear: Partial<MemberView> };
+
+/** Opens the activation (first membership) without also opening the member's profile. */
+function ActivateButton({ member }: { member: Member }) {
+  const { openRenew } = useStore();
+  return <button type="button" className="row-action" onClick={(e) => { e.stopPropagation(); openRenew(member.id); }}>Activate</button>;
+}
 
 export function Members({ setScreen, query, setQuery, view, setView }: { setScreen: (s: Screen) => void; query: string; setQuery: (q: string) => void; view: MemberView; setView: React.Dispatch<React.SetStateAction<MemberView>> }) {
   const { data, today, viewMember } = useStore();
@@ -42,8 +54,9 @@ export function Members({ setScreen, query, setQuery, view, setView }: { setScre
       (view.status === "All" || memberStatus(m, today) === view.status) &&
       (view.plan === "All" || m.plan === view.plan) &&
       matchesPayment(m, view.payment) &&
+      matchesSource(m, view.source) &&
       (expiryDays === null || (memberStatus(m, today) === "Active" && diffDays(m.expiryDate, today) <= expiryDays)));
-  }, [data.members, query, view.status, view.plan, view.payment, view.expiry, today]);
+  }, [data.members, query, view.status, view.plan, view.payment, view.expiry, view.source, today]);
   const pageCount = Math.max(1, Math.ceil(filtered.length / MEMBER_PAGE_SIZE));
   const safePage = Math.min(view.page, pageCount - 1);
   const visible = filtered.slice(safePage * MEMBER_PAGE_SIZE, (safePage + 1) * MEMBER_PAGE_SIZE);
@@ -51,37 +64,49 @@ export function Members({ setScreen, query, setQuery, view, setView }: { setScre
   if (view.plan !== "All") chips.push({ label: `Plan: ${view.plan}`, clear: { plan: "All" } });
   if (view.payment !== "All") chips.push({ label: `Payment: ${view.payment}`, clear: { payment: "All" } });
   if (view.expiry !== "Any") chips.push({ label: `Expires: ${view.expiry}`, clear: { expiry: "Any" } });
+  if (view.source !== "All") chips.push({ label: `Joined via: ${view.source}`, clear: { source: "All" } });
   const total = data.members.length;
   const active = data.members.filter((m) => memberStatus(m, today) === "Active").length;
+  const pending = data.members.filter((m) => memberStatus(m, today) === "Pending").length;
   const expiringSoon = data.members.filter((m) => isExpiringSoon(m, today)).length;
   const outstanding = data.members.reduce((s, m) => s + m.balance, 0);
+  // The Pending tab appears once someone has registered through the form (or is being looked at).
+  const statusTabs = pending > 0 || view.status === "Pending" ? ["All", "Active", "Pending", "Expired", "Suspended"] : ["All", "Active", "Expired", "Suspended"];
   // Any filter change goes back to page 1.
   const set = (patch: Partial<MemberView>) => setView((v) => ({ ...v, page: 0, ...patch }));
-  const clearFilters = () => set({ plan: "All", payment: "All", expiry: "Any" });
-  const showAll = () => { setQuery(""); set({ status: "All", plan: "All", payment: "All", expiry: "Any" }); };
+  const clearFilters = () => set({ plan: "All", payment: "All", expiry: "Any", source: "All" });
+  const showAll = () => { setQuery(""); set({ status: "All", plan: "All", payment: "All", expiry: "Any", source: "All" }); };
   const stats: [string, string, string, () => void][] = [
     ["All members", String(total), "", showAll],
-    ["Active", String(active), "green-text", () => set({ status: "Active", plan: "All", payment: "All", expiry: "Any" })],
-    ["Expiring soon", String(expiringSoon), "amber-text", () => set({ status: "All", plan: "All", payment: "All", expiry: "Next 7 days", showFilters: true })],
-    ["Outstanding", formatMoney(outstanding), "", () => set({ status: "All", plan: "All", payment: "Has dues", expiry: "Any", showFilters: true })],
+    ["Active", String(active), "green-text", () => set({ status: "Active", plan: "All", payment: "All", expiry: "Any", source: "All" })],
+    ["Expiring soon", String(expiringSoon), "amber-text", () => set({ status: "All", plan: "All", payment: "All", expiry: "Next 7 days", source: "All", showFilters: true })],
+    ["Outstanding", formatMoney(outstanding), "", () => set({ status: "All", plan: "All", payment: "Has dues", expiry: "Any", source: "All", showFilters: true })],
   ];
+  // Rows are focusable divs (not buttons) so pending members can have an Activate button inside.
+  const rowProps = (m: Member) => ({
+    role: "button",
+    tabIndex: 0,
+    onClick: () => viewMember(m.id),
+    onKeyDown: (e: React.KeyboardEvent) => { if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); viewMember(m.id); } },
+  });
   return <div className="page">
     <PageHeader eyebrow="MEMBERS" title="Your members" subtitle="Manage profiles, memberships, and payment status." action={<Button icon="plus" onClick={() => setScreen("member-form")}>Add member</Button>}/>
     <div className="mini-stats mini-stats-clickable">{stats.map(([label, value, tone, onClick]) => <div key={label} role="button" tabIndex={0} title={`Show ${label.toLowerCase()}`} onClick={onClick} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } }}><span>{label}</span><strong className={tone}>{value}</strong></div>)}</div>
     <section className="panel table-panel">
-      <div className="toolbar"><SearchBox value={query} onChange={(v) => { setQuery(v); set({}); }} placeholder="Search by name or phone"/><div className="filter-tabs">{["All","Active","Expired","Suspended"].map((f) => <button className={view.status === f ? "active" : ""} onClick={() => set({ status: f })} key={f}>{f}</button>)}</div><button className={`filter-btn ${view.showFilters || chips.length > 0 ? "active" : ""}`} onClick={() => setView((v) => ({ ...v, showFilters: !v.showFilters }))} aria-expanded={view.showFilters}><Icon name="settings" size={16}/> Filters{chips.length > 0 ? ` (${chips.length})` : ""}</button></div>
+      <div className="toolbar"><SearchBox value={query} onChange={(v) => { setQuery(v); set({}); }} placeholder="Search by name or phone"/><div className="filter-tabs">{statusTabs.map((f) => <button className={view.status === f ? "active" : ""} onClick={() => set({ status: f })} key={f}>{f}</button>)}</div><button className={`filter-btn ${view.showFilters || chips.length > 0 ? "active" : ""}`} onClick={() => setView((v) => ({ ...v, showFilters: !v.showFilters }))} aria-expanded={view.showFilters}><Icon name="settings" size={16}/> Filters{chips.length > 0 ? ` (${chips.length})` : ""}</button></div>
       {view.showFilters && <div className="filter-bar">
         <FilterGroup label="Plan" options={["All", ...planNames]} value={view.plan} onChange={(v) => set({ plan: v })}/>
         <FilterGroup label="Payment" options={PAYMENT_OPTIONS} value={view.payment} onChange={(v) => set({ payment: v })}/>
         <FilterGroup label="Expires" options={EXPIRY_OPTIONS} value={view.expiry} onChange={(v) => set({ expiry: v })}/>
+        <FilterGroup label="Joined via" options={SOURCE_OPTIONS} value={view.source} onChange={(v) => set({ source: v })}/>
         {chips.length > 0 && <button className="text-btn" onClick={clearFilters}>Clear filters</button>}
       </div>}
       {!view.showFilters && chips.length > 0 && <div className="filter-bar filter-summary"><span className="filter-summary-label">Filtered by</span>{chips.map((c) => <button className="filter-chip" key={c.label} onClick={() => set(c.clear)} title="Remove filter">{c.label}<Icon name="close" size={12}/></button>)}<button className="text-btn" onClick={clearFilters}>Clear filters</button></div>}
       <div className="desktop-table">
         <div className="table-row table-header"><span>Member</span><span>Status</span><span>Plan</span><span>Joined</span><span>Expires</span><span>Payment</span><span/></div>
-        {visible.map((m) => { const status = memberStatus(m, today); const pay = paymentState(m); return <button className="table-row" key={m.id} onClick={() => viewMember(m.id)}><span className="member-cell"><Avatar initials={initialsOf(m.name)} color={m.color} small/><span><strong>{m.name}</strong><small>{formatPhone(m.phone)}</small></span></span><span><Badge tone={statusTone(status)}>{status}</Badge></span><span>{m.plan}</span><span>{formatDate(m.joined)}</span><span>{formatDate(m.expiryDate)}</span><span><Badge tone={paymentTone(pay)}>{pay}</Badge>{m.balance > 0 && <small className="balance">{formatMoney(m.balance)} due</small>}</span><span><Icon name="chevron" size={17}/></span></button>; })}
+        {visible.map((m) => { const status = memberStatus(m, today); const pay = paymentState(m); return <div className="table-row" key={m.id} {...rowProps(m)}><span className="member-cell"><Avatar initials={initialsOf(m.name)} color={m.color} small/><span><strong>{m.name}</strong><small>{m.code} · {formatPhone(m.phone)}</small></span></span><span><Badge tone={statusTone(status)}>{status}</Badge></span><span>{m.pending ? "—" : m.plan}</span><span>{formatDate(m.joined)}</span><span>{m.pending ? "—" : formatDate(m.expiryDate)}</span><span>{m.pending ? <ActivateButton member={m}/> : <><Badge tone={paymentTone(pay)}>{pay}</Badge>{m.balance > 0 && <small className="balance">{formatMoney(m.balance)} due</small>}</>}</span><span><Icon name="chevron" size={17}/></span></div>; })}
       </div>
-      <div className="mobile-member-list">{visible.map((m) => { const status = memberStatus(m, today); const pay = paymentState(m); return <button className="member-card" key={m.id} onClick={() => viewMember(m.id)}><div className="member-card-top"><Avatar initials={initialsOf(m.name)} color={m.color}/><span><strong>{m.name}</strong><small>{formatPhone(m.phone)}</small></span><Icon name="chevron" size={18}/></div><div className="member-card-meta"><span><small>Plan</small>{m.plan}</span><span><small>Expires</small>{formatDate(m.expiryDate)}</span></div><div className="member-card-badges"><Badge tone={statusTone(status)}>{status}</Badge><Badge tone={paymentTone(pay)}>{pay}{m.balance > 0 ? ` · ${formatMoney(m.balance)} due` : ""}</Badge></div></button>; })}</div>
+      <div className="mobile-member-list">{visible.map((m) => { const status = memberStatus(m, today); const pay = paymentState(m); return <div className="member-card" key={m.id} {...rowProps(m)}><div className="member-card-top"><Avatar initials={initialsOf(m.name)} color={m.color}/><span><strong>{m.name}</strong><small>{m.code} · {formatPhone(m.phone)}</small></span><Icon name="chevron" size={18}/></div><div className="member-card-meta">{m.pending ? <><span><small>Registered</small>{formatDate(m.joined)}</span><span><small>Membership</small>Not started</span></> : <><span><small>Plan</small>{m.plan}</span><span><small>Expires</small>{formatDate(m.expiryDate)}</span></>}</div><div className="member-card-badges"><Badge tone={statusTone(status)}>{status}</Badge>{m.pending ? <ActivateButton member={m}/> : <Badge tone={paymentTone(pay)}>{pay}{m.balance > 0 ? ` · ${formatMoney(m.balance)} due` : ""}</Badge>}</div></div>; })}</div>
       {filtered.length === 0 && <div className="search-empty"><p>No members match your search or filters.</p><button className="text-btn" onClick={showAll}>Show all members</button></div>}
       <Pagination page={safePage} pageSize={MEMBER_PAGE_SIZE} total={filtered.length} noun="members" onPage={(p) => setView((v) => ({ ...v, page: p }))}/>
     </section>

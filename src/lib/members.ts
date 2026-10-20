@@ -1,14 +1,26 @@
 // Explicit .ts extensions: this file is also used by the server (Supabase Edge Function, Deno).
-import { type AppData, type Member } from "../data/types.ts";
+import { type AppData, type Member, type Renewal } from "../data/types.ts";
 import { diffDays, formatDate, formatMoney } from "./format.ts";
 
-export type MemberStatus = "Active" | "Expired" | "Suspended";
+/** "Pending" = registered through the form, no membership activated yet. */
+export type MemberStatus = "Active" | "Expired" | "Suspended" | "Pending";
 
 export type PaymentState = "Paid" | "Partial" | "Unpaid";
 
 export function memberStatus(m: Member, today: string): MemberStatus {
   if (m.suspended) return "Suspended";
+  if (m.pending) return "Pending";
   return m.expiryDate < today ? "Expired" : "Active";
+}
+
+/** Ids of each member's first membership (joining). The others are renewals. */
+export function firstMembershipIds(renewals: Renewal[]) {
+  const first = new Map<string, Renewal>();
+  renewals.forEach((r) => {
+    const f = first.get(r.memberId);
+    if (!f || r.startDate < f.startDate || (r.startDate === f.startDate && r.createdAt < f.createdAt)) first.set(r.memberId, r);
+  });
+  return new Set([...first.values()].map((r) => r.id));
 }
 
 export function paymentState(m: Member): PaymentState {
@@ -46,7 +58,7 @@ export function stoppedComing(data: AppData, today: string, days = 14, last = la
   return data.members.filter((m) => memberStatus(m, today) === "Active" && diffDays(today, last.get(m.id) ?? m.joined) >= days).sort((a, b) => (last.get(a.id) ?? "").localeCompare(last.get(b.id) ?? ""));
 }
 
-export const statusTone = (s: string) => (s === "Active" ? "success" : s === "Expired" ? "danger" : "neutral");
+export const statusTone = (s: string) => (s === "Active" ? "success" : s === "Expired" ? "danger" : s === "Pending" ? "warning" : "neutral");
 
 export const paymentTone = (s: string) => (s === "Paid" ? "success" : s === "Partial" ? "warning" : "danger");
 

@@ -30,11 +30,13 @@ src/
   admin/                Messy2Easy platform admin (gyms + owners)
   lib/                  pure helpers: format.ts (dates, money, phone), members.ts (status, dues,
                         rankings, "needs attention" lists), periods.ts (date ranges, chart buckets, financial year), download.ts (CSV),
-                        summary.ts + summaryText.ts (owner daily summary), notifications.ts (calls the function)
+                        summary.ts + summaryText.ts (owner daily summary), notifications.ts (calls the function),
+                        registration.ts (public registration form: link, load, submit, error messages)
   components/           reusable UI: Icon, Button/Badge/Avatar, Modal, SearchBox, Pagination, charts...
   layout/               Sidebar (desktop), Topbar, MobileNav (phone bottom bar + "More" sheet)
   pages/                one file per screen: Dashboard, Members, MemberProfile, MemberForm, Attendance,
-                        Payments, MemberPayments, Earnings, Renewals, Plans, Settings, Login
+                        Payments, MemberPayments, Earnings, Renewals, Plans, Settings, Login,
+                        Register (public form, no login)
   modals/               RecordPaymentModal, RenewModal (opened from several pages)
 ```
 
@@ -46,6 +48,7 @@ src/
 - Check-ins older than `ATTENDANCE_DAYS_LOADED` (120 days) are not loaded yet.
 - Derived values (status, balance, totals, charts) are computed on render; the database view `member_overview` computes balance/status/expiry server-side.
 - Accounts (create gym + owner, invite staff, reset password, remove) go through the `accounts` Edge Function (`supabase/functions/accounts`), which uses the service-role key on the server only.
+- Self-service registration: the owner turns on a secret link per gym (`gyms.registration_token`, Dashboard → "Member registration form"). `/?join=<token>` opens `pages/Register.tsx` instead of `AuthGate` (a query parameter, so no host rewrites are needed). The visitor has no table access: the page calls the `registration_form` and `register_member` database functions (security definer; gym taken from the token, all input validated again, duplicates by gym + phone refused, max 30 per gym per hour). A registered person is a member with `source = 'form'` and no membership, so status `"Pending"` (`member.pending`); "Activate" opens `RenewModal`, which creates the first membership via `renew_membership`. Use `firstMembershipIds()` (not "start date = joining date") to tell joining from renewals.
 - Owner bell: Activity (from the `activity_log` table, filled by triggers; owners only), Needs attention, Report (`src/lib/report.ts` → Excel via SheetJS, loaded on demand, or WhatsApp share text).
 - Owner daily summary (optional, hidden until a channel is configured): `notifications` Edge Function + Supabase cron every 15 min (see README "Owner notifications"). It imports `src/data/appData.ts`, `src/lib/summary.ts` and their imports directly, so those files use explicit `.ts` import extensions and no browser-only APIs.
 

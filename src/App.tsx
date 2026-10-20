@@ -83,6 +83,7 @@ export default function App({ account, onSignOut }: { account: Account; onSignOu
     openRenew: (memberId) => { setPaymentModal(null); setRenewMemberId(memberId); },
     openRenewals: (tab) => { setRenewalsTab(tab); setPageKey((k) => k + 1); go("renewals"); },
     openPaymentsTab: (tab) => { setPaymentsTab(tab); setPageKey((k) => k + 1); go("payments"); },
+    openMembers: (view) => { setMemberQuery(""); setMemberView({ ...defaultMemberView, ...view }); go("members"); },
     openNotificationSettings: () => { setSettingsSection("notifications"); setPageKey((k) => k + 1); go("settings"); },
   };
 

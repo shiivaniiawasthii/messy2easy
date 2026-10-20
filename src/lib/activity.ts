@@ -33,6 +33,9 @@ export function describeActivity(a: ActivityRow): { text: string; icon: IconName
   const m = a.member_name || "a member";
   switch (a.action) {
     case "member_added": return { text: `added new member ${m}`, icon: "users", kind: "members", warn: false };
+    // Logged with the person's own name as the actor ("Rahul registered …").
+    case "member_registered": return { text: "registered through the gym’s form link", icon: "users", kind: "members", warn: false };
+    case "membership_activated": return { text: `activated ${m}’s membership on ${a.detail || "a"} plan (${money(a.amount)})`, icon: "check", kind: "money", warn: false };
     case "member_updated": return { text: `updated ${m}’s details`, icon: "edit", kind: "members", warn: false };
     case "member_suspended": return { text: `suspended ${m}’s membership`, icon: "close", kind: "members", warn: true };
     case "member_reactivated": return { text: `re-activated ${m}’s membership`, icon: "check", kind: "members", warn: false };

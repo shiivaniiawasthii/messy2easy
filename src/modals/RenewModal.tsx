@@ -46,15 +46,20 @@ export function RenewModal({ memberId, onClose }: { memberId: string; onClose: (
     }
   };
   const paidNow = done?.payment ?? null;
-  return <Modal title={done ? "Membership renewed" : "Renew membership"} subtitle={done ? `${member.name} is covered until ${formatDateLong(done.expiry)}.` : `${member.name} · ${member.plan} plan, expires ${formatDate(member.expiryDate)}`} onClose={onClose}>
+  // A member who registered through the form has no membership yet: this starts the first one.
+  const activating = member.pending;
+  const title = activating ? (done ? "Membership activated" : "Activate membership") : (done ? "Membership renewed" : "Renew membership");
+  const subtitle = done ? `${member.name} is covered until ${formatDateLong(done.expiry)}.` : activating ? `${member.name} · ${member.code} · registered ${formatDate(member.joined)}` : `${member.name} · ${member.plan} plan, expires ${formatDate(member.expiryDate)}`;
+  return <Modal title={title} subtitle={subtitle} onClose={onClose}>
     {done ? <div className="modal-success"><span className="success-icon"><Icon name="check" size={28}/></span><strong>{done.plan} plan until {formatDate(done.expiry)}</strong><p>{paidNow ? `${formatMoney(paidNow.amount)} received via ${paidNow.method}` : "No payment recorded yet. The amount is added to the member’s balance."}</p><Button onClick={onClose}>Done</Button></div>
     : <form onSubmit={submit} noValidate>
       <div className="field"><label htmlFor="renew-plan">Plan</label><select id="renew-plan" value={planId} onChange={(e) => { const p = data.plans.find((x) => x.id === e.target.value); setPlanId(e.target.value); if (p) setPaid(String(p.price)); setError(""); }}>{data.plans.map((p) => <option key={p.id} value={p.id}>{p.name} — {durationLabel(p.days)} · {formatMoney(p.price)}</option>)}</select></div>
       <div className="form-row"><div className="field"><label htmlFor="renew-start">Start date</label><input id="renew-start" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)}/></div><div className="field"><label htmlFor="renew-end">Valid until</label><input id="renew-end" value={plan ? formatDate(expiry) : "—"} readOnly/></div></div>
       <div className="form-row"><div className="field"><label htmlFor="renew-paid">Amount received now</label><div className="money-input"><span>₹</span><input id="renew-paid" inputMode="numeric" value={paid} onChange={(e) => { setPaid(e.target.value); setError(""); }} placeholder="0"/></div></div><div className="field"><label htmlFor="renew-method">Payment method</label><select id="renew-method" value={method} onChange={(e) => setMethod(e.target.value)}>{paymentMethods.map((m) => <option key={m}>{m}</option>)}</select></div></div>
-      <div className="balance-box"><span>Plan price<strong>{formatMoney(price)}</strong></span><span>Previous balance<strong>{formatMoney(member.balance)}</strong></span><span>Balance after renewal<strong className={after <= 0 ? "green-text" : "amber-text"}>{formatMoney(Math.max(0, after))}</strong></span></div>
+      <div className="balance-box"><span>Plan price<strong>{formatMoney(price)}</strong></span><span>Previous balance<strong>{formatMoney(member.balance)}</strong></span><span>Balance after {activating ? "activation" : "renewal"}<strong className={after <= 0 ? "green-text" : "amber-text"}>{formatMoney(Math.max(0, after))}</strong></span></div>
+      {data.plans.length === 0 && <p className="form-note">No plans yet. Create one on the Plans page first.</p>}
       {error && <p className="form-error">{error}</p>}
-      <div className="modal-actions"><Button variant="ghost" onClick={onClose}>Cancel</Button><Button type="submit" disabled={saving}>{saving ? "Saving…" : "Renew membership"}</Button></div>
+      <div className="modal-actions"><Button variant="ghost" onClick={onClose}>Cancel</Button><Button type="submit" disabled={saving}>{saving ? "Saving…" : activating ? "Activate membership" : "Renew membership"}</Button></div>
     </form>}
   </Modal>;
 }
