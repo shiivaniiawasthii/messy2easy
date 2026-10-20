@@ -8,7 +8,8 @@ import { StatCard } from "../components/StatCard";
 import { Avatar, Badge, Button } from "../components/ui";
 import { type Member, type Renewal } from "../data/types";
 import { addDays, DAYS_LONG, diffDays, formatDate, formatMoney, formatPhone, formatShortMoney, initialsOf, MONTHS, MONTHS_LONG, parseDate, parseDateTime, relativeTime } from "../lib/format";
-import { expiredWithin, expiringWithin, lastVisits, membersWithDues, plural, stoppedComing } from "../lib/members";
+import { RegistrationPanel } from "../components/RegistrationPanel";
+import { expiredWithin, expiringWithin, firstMembershipIds, lastVisits, memberStatus, membersWithDues, plural, stoppedComing } from "../lib/members";
 import { type Bucket, collectionBuckets, type DateRange, hourLabel, inRange, type Period, periodRanges, PERIODS, shortHour, WEEKDAYS } from "../lib/periods";
 import { type Screen } from "../navigation";
 import { useStore } from "../store/store";
@@ -23,7 +24,7 @@ export function InactiveMembersModal({ members, lastVisit, onClose }: { members:
 }
 
 export function Dashboard({ setScreen }: { setScreen: (s: Screen) => void }) {
-  const { data, today, viewMember, openRenewals, openPaymentsTab, account } = useStore();
+  const { data, today, viewMember, openRenewals, openPaymentsTab, openMembers, account } = useStore();
   const isOwner = account.role === "owner"; // staff only receive the payments they recorded
   const [period, setPeriod] = useState<Period>("month");
   const [showInactive, setShowInactive] = useState(false);
@@ -31,12 +32,13 @@ export function Dashboard({ setScreen }: { setScreen: (s: Screen) => void }) {
   const hour = now.getHours();
   const { current, previous, vs } = periodRanges(period, today);
   const memberById = new Map(data.members.map((m) => [m.id, m]));
-  const isFirstMembership = (r: Renewal) => memberById.get(r.memberId)?.joined === r.startDate;
+  const firstIds = firstMembershipIds(data.renewals);
+  const isFirstMembership = (r: Renewal) => firstIds.has(r.id);
 
   // Headline numbers for the period, compared with the period before.
   const sumPayments = (r: DateRange) => data.payments.filter((p) => inRange(p.paidAt, r)).reduce((s, p) => s + p.amount, 0);
   const countRenewals = (r: DateRange) => data.renewals.filter((x) => inRange(x.createdAt, r) && !isFirstMembership(x)).length;
-  const countJoined = (r: DateRange) => data.members.filter((m) => inRange(m.joined, r)).length;
+  const countJoined = (r: DateRange) => data.members.filter((m) => !m.pending && inRange(m.joined, r)).length;
   const countCheckins = (r: DateRange) => data.attendance.filter((a) => inRange(a.at, r)).length;
   const collected = sumPayments(current);
   const periodName = PERIODS.find(([p]) => p === period)?.[1].toLowerCase() ?? "";
@@ -58,6 +60,9 @@ export function Dashboard({ setScreen }: { setScreen: (s: Screen) => void }) {
     { id: "dues", icon: "wallet", tone: "blue", title: `${plural(withDues.length, "member")} with pending dues`, detail: "Collect at their next visit", value: formatMoney(withDues.reduce((s, m) => s + m.balance, 0)), onClick: () => openPaymentsTab("Unpaid") },
     { id: "inactive", icon: "users", tone: "violet", title: `${plural(inactive.length, "member")} stopped coming`, detail: "Active plan, but no visit in 14+ days", value: String(inactive.length), onClick: () => setShowInactive(true) },
   ];
+  // People who registered through the form link and are waiting for a plan.
+  const pending = data.members.filter((m) => memberStatus(m, today) === "Pending");
+  if (pending.length > 0) focus.unshift({ id: "pending", icon: "check", tone: "amber", title: `${plural(pending.length, "new registration")} to activate`, detail: "Registered with the form link · choose a plan and take payment", value: String(pending.length), onClick: () => openMembers({ status: "Pending" }) });
 
   // When members come: use the period, or the last 30 days if there is too little data yet.
   let visitRange = current;
@@ -137,6 +142,7 @@ export function Dashboard({ setScreen }: { setScreen: (s: Screen) => void }) {
         </div>
       </div>
     </section>
+    {isOwner && <RegistrationPanel/>}
     {showInactive && <InactiveMembersModal members={inactive} lastVisit={lastVisit} onClose={() => setShowInactive(false)}/>}
   </div>;
 }

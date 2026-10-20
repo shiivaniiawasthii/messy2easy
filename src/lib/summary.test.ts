@@ -15,10 +15,10 @@ let seq = 0;
 const member = (over: Partial<Member> = {}): Member => ({
   id: `m${++seq}`, code: `M-${seq}`, name: `Member ${seq}`, phone: "9876543210", color: "mint", joined: "2026-01-01",
   plan: "Monthly", planDays: 30, planPrice: 1000, startDate: "2026-10-01", expiryDate: "2026-10-30",
-  balance: 0, suspended: false, emergency: "", dob: "", notes: "", ...over,
+  balance: 0, suspended: false, emergency: "", dob: "", notes: "", email: "", gender: "", address: "", source: "staff", pending: false, ...over,
 });
 const gymData = (over: Partial<AppData> = {}): AppData => ({
-  gym: { name: "Wolves Area gym", address: "", phone: "", gstin: "", subscriptionPlan: "Pilot", subscriptionEndsOn: "" },
+  gym: { name: "Wolves Area gym", address: "", phone: "", gstin: "", subscriptionPlan: "Pilot", subscriptionEndsOn: "", registrationToken: "" },
   members: [], plans: [], payments: [], attendance: [], renewals: [], expenses: [], ...over,
 });
 const visit = (m: Member, at: string) => ({ id: `a-${m.id}-${at}`, memberId: m.id, memberName: m.name, at, by: "" });
@@ -103,9 +103,9 @@ describe("daily summary", () => {
     const nowLocal = zonedDateTime(new Date("2026-10-12T18:45:00Z"));
     assert.equal(nowLocal, "2026-10-13T00:15:00");
     const rows: AppRows = {
-      gym: { name: "Night Gym", address: "", phone: "", gstin: "", subscription_plan: "Pilot", subscription_ends_on: null },
+      gym: { name: "Night Gym", address: "", phone: "", gstin: "", subscription_plan: "Pilot", subscription_ends_on: null, registration_token: null },
       plans: [], memberships: [], expenses: [], team: [],
-      members: [{ id: "m1", code: "M-1", name: "Night Owl", phone: "9876543210", color: "mint", joined_on: "2026-01-01", plan: "Monthly", plan_days: 30, plan_price: 1000, start_date: "2026-10-01", expiry_date: "2026-10-30", balance: 0, suspended: false, emergency_contact: "", date_of_birth: null, notes: "" }],
+      members: [{ id: "m1", code: "M-1", name: "Night Owl", phone: "9876543210", color: "mint", joined_on: "2026-01-01", plan: "Monthly", plan_days: 30, plan_price: 1000, start_date: "2026-10-01", expiry_date: "2026-10-30", balance: 0, suspended: false, emergency_contact: "", date_of_birth: null, notes: "", email: "", gender: "", address: "", source: "staff" }],
       payments: [
         { id: "p1", member_id: "m1", amount: 500, method: "Cash", paid_at: "2026-10-12T18:40:00Z", note: "", created_by: null, created_at: "2026-10-12T18:40:00Z" }, // 00:10 IST 13 Oct
         { id: "p2", member_id: "m1", amount: 900, method: "UPI", paid_at: "2026-10-12T18:20:00Z", note: "", created_by: null, created_at: "2026-10-12T18:20:00Z" }, // 23:50 IST 12 Oct

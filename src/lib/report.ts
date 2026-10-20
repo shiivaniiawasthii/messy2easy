@@ -4,7 +4,7 @@
 
 import { type AppData } from "../data/types";
 import { addDays, formatDate, formatMoney, MONTHS_LONG, parseDate, toISODate } from "./format";
-import { expiredWithin, expiringWithin, lastVisits, memberStatus, membersWithDues, stoppedComing } from "./members";
+import { expiredWithin, expiringWithin, firstMembershipIds, lastVisits, memberStatus, membersWithDues, stoppedComing } from "./members";
 import { inRange, type DateRange } from "./periods";
 import { buildDailySummary } from "./summary";
 import { summaryText } from "./summaryText";
@@ -27,9 +27,9 @@ export function buildReport(data: AppData, today: string, period: ReportPeriod) 
   const payments = data.payments.filter((p) => inRange(p.paidAt, range)).sort((a, b) => a.paidAt.localeCompare(b.paidAt));
   const checkins = data.attendance.filter((a) => inRange(a.at, range)).sort((a, b) => a.at.localeCompare(b.at));
   const expenses = data.expenses.filter((e) => inRange(e.date, range)).sort((a, b) => a.date.localeCompare(b.date));
-  const joinedIds = new Set(data.members.map((m) => `${m.id}|${m.joined}`));
-  const renewals = data.renewals.filter((r) => inRange(r.createdAt, range) && !joinedIds.has(`${r.memberId}|${r.startDate}`));
-  const newMembers = data.members.filter((m) => inRange(m.joined, range));
+  const firstIds = firstMembershipIds(data.renewals);
+  const renewals = data.renewals.filter((r) => inRange(r.createdAt, range) && !firstIds.has(r.id));
+  const newMembers = data.members.filter((m) => !m.pending && inRange(m.joined, range));
   const byMethod = new Map<string, number>();
   payments.forEach((p) => byMethod.set(p.method, (byMethod.get(p.method) ?? 0) + p.amount));
   const collected = payments.reduce((s, p) => s + p.amount, 0);

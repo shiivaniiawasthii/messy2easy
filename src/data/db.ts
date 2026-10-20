@@ -15,8 +15,10 @@ export async function loadAppData(): Promise<AppData> {
 }
 
 /** Turns database errors into short messages. */
-function fail(error: { message?: string; code?: string } | null, fallback = "Couldn't save. Check your internet connection and try again."): never {
+function fail(error: { message?: string; code?: string; details?: string } | null, fallback = "Couldn't save. Check your internet connection and try again."): never {
   const msg = error?.message ?? "";
+  // create_member names the member who already has this number (also one who registered moments ago).
+  if (msg === "duplicate_phone") throw new Error(`This mobile number already belongs to ${error?.details || "another member"}.`);
   if (error?.code === "23505" && msg.includes("phone")) throw new Error("This mobile number already belongs to another member.");
   if (error?.code === "23505" && msg.includes("plans")) throw new Error("A plan with this name already exists.");
   if (error?.code === "42501" || msg.includes("row-level security")) throw new Error("You don't have permission to do this.");
@@ -28,7 +30,7 @@ function fail(error: { message?: string; code?: string } | null, fallback = "Cou
 const toTimestamp = (date: string, time = "12:00:00") => new Date(`${date}T${time}`).toISOString();
 
 export const db = {
-  async addMember(input: { name: string; phone: string; joined: string; emergency: string; dob: string; notes: string; planId: string | null; customDays?: number; customPrice?: number }) {
+  async addMember(input: { name: string; phone: string; joined: string; emergency: string; dob: string; notes: string; email: string; gender: string; address: string; planId: string | null; customDays?: number; customPrice?: number }) {
     const { data, error } = await supabase.rpc("create_member", {
       p_name: input.name,
       p_phone: input.phone,
@@ -40,14 +42,24 @@ export const db = {
       p_custom_days: input.planId ? null : input.customDays,
       p_custom_price: input.planId ? null : input.customPrice,
       p_color: avatarColors[Math.floor(Math.random() * avatarColors.length)],
+      p_email: input.email,
+      p_gender: input.gender,
+      p_address: input.address,
     });
     if (error) fail(error);
     return data as string;
   },
 
-  async updateMember(id: string, input: { name: string; phone: string; joined: string; emergency: string; dob: string; notes: string; suspended: boolean }) {
-    const { error } = await supabase.from("members").update({ name: input.name, phone: input.phone, joined_on: input.joined, emergency_contact: input.emergency, date_of_birth: input.dob || null, notes: input.notes, suspended: input.suspended }).eq("id", id);
+  async updateMember(id: string, input: { name: string; phone: string; joined: string; emergency: string; dob: string; notes: string; suspended: boolean; email: string; gender: string; address: string }) {
+    const { error } = await supabase.from("members").update({ name: input.name, phone: input.phone, joined_on: input.joined, emergency_contact: input.emergency, date_of_birth: input.dob || null, notes: input.notes, suspended: input.suspended, email: input.email, gender: input.gender, address: input.address }).eq("id", id);
     if (error) fail(error);
+  },
+
+  /** Owner: turns the public registration link on (always a new link; the old one stops working) or off. */
+  async setRegistrationLink(on: boolean) {
+    const { data, error } = await supabase.rpc("set_registration_link", { p_on: on });
+    if (error) fail(error);
+    return (data as string | null) ?? "";
   },
 
   async recordPayment(input: { memberId: string; amount: number; method: string; date: string; note: string }) {

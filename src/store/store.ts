@@ -3,6 +3,7 @@ import { createContext, useContext } from "react";
 import { type AppData } from "../data/types";
 import { type PaymentState } from "../lib/members";
 import { type RenewalTab } from "../navigation";
+import { type MemberView } from "../pages/Members";
 
 export type Store = {
   account: Account;
@@ -18,6 +19,8 @@ export type Store = {
   openRenew: (memberId: string) => void;
   openRenewals: (tab: RenewalTab) => void;
   openPaymentsTab: (tab: "All" | PaymentState) => void;
+  /** Members page with these filters (the rest reset), e.g. { status: "Pending" }. */
+  openMembers: (view: Partial<MemberView>) => void;
   /** Owner only: Settings → Notifications. */
   openNotificationSettings: () => void;
 };

@@ -20,15 +20,19 @@ export function Login() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     // Gym owners and staff use their mobile number; the Messy2Easy admin can also use an email address.
+    // Spaces are removed: details copied from WhatsApp often carry one at the start or end
+    // ("kmrt-4827 "), which made correct passwords fail. Passwords never start or end with a space
+    // (temporary ones have none, and ChangePassword trims new ones).
     const typed = phone.trim();
     const isEmail = typed.includes("@");
     const digits = normalizePhone(typed);
+    const pass = password.trim();
     if (!isEmail && !isValidIndianMobile(digits)) return setError("Enter your 10-digit mobile number (or your email).");
-    if (!password) return setError("Enter your password.");
+    if (!pass) return setError("Enter your password.");
     setError("");
     setLoading(true);
     setRememberLogin(remember);
-    const { error: signInError } = await supabase.auth.signInWithPassword({ email: isEmail ? typed.toLowerCase() : loginEmail(digits), password });
+    const { error: signInError } = await supabase.auth.signInWithPassword({ email: isEmail ? typed.replace(/\s+/g, "").toLowerCase() : loginEmail(digits), password: pass });
     // On success AuthGate takes over; only errors are handled here.
     if (signInError) {
       setError(friendlyAuthError(signInError));

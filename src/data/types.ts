@@ -21,6 +21,13 @@ export type Member = {
   emergency: string;
   dob: string;
   notes: string;
+  email: string;
+  gender: string;
+  address: string;
+  /** Added by owner/staff in the app, or registered themselves through the gym's form link. */
+  source: "staff" | "form";
+  /** No membership yet (registered through the form, not activated). */
+  pending: boolean;
 };
 
 export type Payment = {
@@ -51,7 +58,8 @@ export type Renewal = {
   createdAt: string;
 };
 
-export type GymProfile = { name: string; address: string; phone: string; gstin: string; subscriptionPlan: string; subscriptionEndsOn: string };
+/** `registrationToken` is "" while the public registration link is off. */
+export type GymProfile = { name: string; address: string; phone: string; gstin: string; subscriptionPlan: string; subscriptionEndsOn: string; registrationToken: string };
 
 export type Expense = { id: string; date: string; category: string; amount: number; method: string; note: string };
 
@@ -68,6 +76,9 @@ export type AppData = {
 export const avatarColors = ["mint", "blue", "amber", "violet", "rose"];
 
 export const paymentMethods = ["UPI", "Cash", "Card", "Bank transfer"];
+
+/** "" = not given. Same list as the database check. */
+export const genders = ["Male", "Female", "Other"];
 
 export const expenseCategories = ["Rent", "Salaries", "Electricity & water", "Equipment", "Maintenance & cleaning", "Marketing", "Other"];
 

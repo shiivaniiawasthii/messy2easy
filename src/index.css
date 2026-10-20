@@ -1157,3 +1157,45 @@ button.recent-row:hover strong { color: var(--primary); }
   .contact-btn span { display: none; }
   .contact-btn { width: 40px; padding: 0; }
 }
+
+/* Member registration: owner's link panel, Members list rows, public form */
+div.table-row[role="button"]:hover { background: #fafcfb; }
+.table-row[role="button"]:focus-visible, .member-card[role="button"]:focus-visible { outline: 2px solid #81b399; outline-offset: -2px; }
+.member-card[role="button"] { cursor: pointer; }
+.row-action { min-height: 28px; padding: 0 12px; border: 0; border-radius: 99px; background: var(--primary); color: white; font-size: 10px; font-weight: 700; cursor: pointer; }
+.row-action:hover { background: var(--primary-dark); }
+.registration-panel { padding: 22px; margin-bottom: 20px; display: grid; gap: 14px; }
+.reg-link { display: flex; align-items: center; gap: 8px; min-height: 43px; padding: 0 12px; border: 1px solid #d9e0dc; border-radius: 9px; background: var(--canvas); color: var(--primary); }
+.reg-link input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--ink); font-size: 12px; text-overflow: ellipsis; }
+.reg-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.reg-empty { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.reg-empty p { color: var(--muted); font-size: 12px; max-width: 460px; }
+.reg-stats { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--line); border-radius: 11px; overflow: hidden; }
+.reg-stats button { display: grid; gap: 4px; padding: 12px 14px; border: 0; border-right: 1px solid var(--line); background: white; text-align: left; cursor: pointer; }
+.reg-stats button:last-child { border-right: 0; }
+.reg-stats button:hover { background: #fafcfb; }
+.reg-stats span { color: var(--muted); font-size: 10px; }
+.reg-stats strong { font: 700 18px "Manrope"; }
+.reg-manage { display: flex; flex-wrap: wrap; gap: 18px; }
+.register-gym { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+.register-gym > span:last-child { display: grid; min-width: 0; }
+.register-gym strong { font: 700 16px "Manrope"; }
+.register-gym small { color: var(--muted); font-size: 11px; margin-top: 2px; }
+.login-card form .register-row { margin: 0; }
+.register-done { display: flex; flex-direction: column; align-items: center; text-align: center; }
+.register-done > p { color: var(--muted); font-size: 12px; line-height: 1.5; margin: 7px 0 14px; }
+.register-done .share-details { max-width: 280px; }
+@media (max-width: 760px) {
+  .registration-panel { padding: 17px; }
+  .reg-actions .btn { flex: 1 1 100%; }
+  .reg-stats span { font-size: 11px; }
+  .row-action { min-height: 32px; font-size: 12px; }
+  .reg-link input, .reg-empty p, .register-done > p { font-size: 14px; }
+  .register-gym small { font-size: 12px; }
+}
+.duplicate-error { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px; border-radius: 10px; background: var(--danger-soft); }
+.duplicate-error > span { flex: 1 1 260px; line-height: 1.5; }
+@media (max-width: 760px) {
+  .duplicate-error .btn { width: 100%; }
+}
+.registration-panel.in-modal { padding: 8px 24px 20px; margin-bottom: 0; box-shadow: none; }

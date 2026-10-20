@@ -23,6 +23,21 @@ pnpm build
   Code: `src/lib/report.ts`, `src/components/ReportPanel.tsx`. The Excel library (SheetJS, from cdn.sheetjs.com)
   loads only when a report is downloaded.
 
+## Member registration form (free, no setup)
+
+- **Dashboard → Member registration form, or Members → Registration link (owner only):** create the gym's link, copy it, share it on WhatsApp or open
+  the form. "Make a new link" stops the old one; "Turn off link" stops registrations.
+- **Public form** (`/?join=<token>`, no login, works on phones): name and mobile required; email, date of birth, gender,
+  address and emergency contact optional. The person gets a member ID (e.g. `M-0042`).
+- The registration shows up in **Members** with status **Pending** (also in Dashboard → Focus here, the owner's bell and
+  Attendance search). **Activate** = choose a plan and start date (end date is calculated) and record the payment.
+- Owner/staff can still **Add member** themselves (now also with email, gender and address). A mobile number that is
+  already in the gym is refused, in the app and again in the database (`create_member`), with the existing member's
+  name; if that person registered through the form, the error offers **Open profile to activate** instead.
+- Database: `supabase/migrations/20261020090000_member_registration.sql`. The public page can only call two functions;
+  they take the gym from the link, validate everything, refuse a mobile number already in that gym, and accept at most
+  30 registrations per gym per hour.
+
 ## Owner notifications (daily summary)
 
 > Optional, paid channels. The settings stay hidden in the app until Email or WhatsApp keys are added.
