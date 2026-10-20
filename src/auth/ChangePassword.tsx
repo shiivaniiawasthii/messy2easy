@@ -15,11 +15,13 @@ export function ChangePassword({ name, onDone, onSignOut }: { name: string; onDo
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password.length < 8) return setError("Use at least 8 characters.");
-    if (password !== confirm) return setError("The two passwords don't match.");
+    // Trimmed like on the login screen, so a space at the start or end can't lock anyone out.
+    const pass = password.trim();
+    if (pass.length < 8) return setError("Use at least 8 characters (spaces at the start or end don't count).");
+    if (pass !== confirm.trim()) return setError("The two passwords don't match.");
     setError("");
     setLoading(true);
-    const { error: updateError } = await supabase.auth.updateUser({ password });
+    const { error: updateError } = await supabase.auth.updateUser({ password: pass });
     if (updateError) {
       setError(friendlyAuthError(updateError));
       setLoading(false);

@@ -25,7 +25,7 @@ pnpm build
 
 ## Member registration form (free, no setup)
 
-- **Dashboard → Member registration form (owner only):** create the gym's link, copy it, share it on WhatsApp or open
+- **Dashboard → Member registration form, or Members → Registration link (owner only):** create the gym's link, copy it, share it on WhatsApp or open
   the form. "Make a new link" stops the old one; "Turn off link" stops registrations.
 - **Public form** (`/?join=<token>`, no login, works on phones): name and mobile required; email, date of birth, gender,
   address and emergency contact optional. The person gets a member ID (e.g. `M-0042`).

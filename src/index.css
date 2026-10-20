@@ -1198,3 +1198,4 @@ div.table-row[role="button"]:hover { background: #fafcfb; }
 @media (max-width: 760px) {
   .duplicate-error .btn { width: 100%; }
 }
+.registration-panel.in-modal { padding: 8px 24px 20px; margin-bottom: 0; box-shadow: none; }

@@ -1,5 +1,6 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { FilterGroup } from "../components/FilterGroup";
+import { RegistrationLinkModal } from "../components/RegistrationPanel";
 import { Icon } from "../components/Icon";
 import { PageHeader } from "../components/PageHeader";
 import { Pagination } from "../components/Pagination";
@@ -43,7 +44,8 @@ function ActivateButton({ member }: { member: Member }) {
 }
 
 export function Members({ setScreen, query, setQuery, view, setView }: { setScreen: (s: Screen) => void; query: string; setQuery: (q: string) => void; view: MemberView; setView: React.Dispatch<React.SetStateAction<MemberView>> }) {
-  const { data, today, viewMember } = useStore();
+  const { data, today, viewMember, account } = useStore();
+  const [showLink, setShowLink] = useState(false);
   const planNames = Array.from(new Set([...data.plans.map((p) => p.name), ...data.members.map((m) => m.plan)]));
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -90,7 +92,8 @@ export function Members({ setScreen, query, setQuery, view, setView }: { setScre
     onKeyDown: (e: React.KeyboardEvent) => { if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); viewMember(m.id); } },
   });
   return <div className="page">
-    <PageHeader eyebrow="MEMBERS" title="Your members" subtitle="Manage profiles, memberships, and payment status." action={<Button icon="plus" onClick={() => setScreen("member-form")}>Add member</Button>}/>
+    <PageHeader eyebrow="MEMBERS" title="Your members" subtitle="Manage profiles, memberships, and payment status." action={<>{account.role === "owner" && <Button variant="secondary" icon="link" onClick={() => setShowLink(true)}>Registration link</Button>}<Button icon="plus" onClick={() => setScreen("member-form")}>Add member</Button></>}/>
+    {showLink && <RegistrationLinkModal onClose={() => setShowLink(false)}/>}
     <div className="mini-stats mini-stats-clickable">{stats.map(([label, value, tone, onClick]) => <div key={label} role="button" tabIndex={0} title={`Show ${label.toLowerCase()}`} onClick={onClick} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } }}><span>{label}</span><strong className={tone}>{value}</strong></div>)}</div>
     <section className="panel table-panel">
       <div className="toolbar"><SearchBox value={query} onChange={(v) => { setQuery(v); set({}); }} placeholder="Search by name or phone"/><div className="filter-tabs">{statusTabs.map((f) => <button className={view.status === f ? "active" : ""} onClick={() => set({ status: f })} key={f}>{f}</button>)}</div><button className={`filter-btn ${view.showFilters || chips.length > 0 ? "active" : ""}`} onClick={() => setView((v) => ({ ...v, showFilters: !v.showFilters }))} aria-expanded={view.showFilters}><Icon name="settings" size={16}/> Filters{chips.length > 0 ? ` (${chips.length})` : ""}</button></div>

@@ -22,7 +22,8 @@ export type IconName =
   | "building"
   | "sparkles"
   | "chart"
-  | "message";
+  | "message"
+  | "link";
 
 export const iconPaths: Record<IconName, React.ReactNode> = {
   home: <><path d="M3 10.8 12 3l9 7.8"/><path d="M5 9.5V21h14V9.5M9 21v-7h6v7"/></>,
@@ -48,6 +49,7 @@ export const iconPaths: Record<IconName, React.ReactNode> = {
   building: <><path d="M3 21h18M6 21V5l6-3 6 3v16M9 9h1M14 9h1M9 13h1M14 13h1M9 17h1M14 17h1"/></>,
   message: <><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.4A8.5 8.5 0 1 1 21 11.5Z"/></>,
   chart: <><path d="M3 20h18"/><path d="M6 16v-5M11 16V6M16 16v-8M21 16v-3"/></>,
+  link: <><path d="M10 13a5 5 0 0 0 7.07 0l3-3a5 5 0 0 0-7.07-7.07l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7.07 0l-3 3a5 5 0 0 0 7.07 7.07l1.5-1.5"/></>,
   sparkles: <><path d="m12 3-1.2 3.2L8 7.5l2.8 1.3L12 12l1.2-3.2L16 7.5l-2.8-1.3ZM5 14l-.8 2.2L2 17l2.2.8L5 20l.8-2.2L8 17l-2.2-.8ZM19 13l-.8 2.2L16 16l2.2.8L19 19l.8-2.2L22 16l-2.2-.8Z"/></>,
 };
 
