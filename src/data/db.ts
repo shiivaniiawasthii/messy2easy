@@ -68,6 +68,13 @@ export const db = {
     return data as string;
   },
 
+  /** Starts a verified registration with the duration, start date and method the person chose, at this fee. */
+  async startRegistration(input: { memberId: string; fee: number; paid: number; method: string }) {
+    const { error } = await supabase.rpc("start_registration", { p_member_id: input.memberId, p_fee: input.fee, p_paid: input.paid, p_method: input.method });
+    if (error?.message === "already_started") throw new Error("This membership has already been started.");
+    if (error) fail(error, error.message && !error.message.includes("fetch") ? error.message : undefined);
+  },
+
   /** Owner only: a link to the member's Aadhaar copy that works for one minute. */
   async aadhaarUrl(path: string) {
     const { data, error } = await supabase.storage.from("member-documents").createSignedUrl(path, 60);

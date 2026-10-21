@@ -54,7 +54,7 @@ export function AadhaarCheck({ member }: { member: Member }) {
   const start = member.intake.startDate;
   const mark = async (valid: boolean) => {
     const ok = valid
-      ? await confirm({ title: "Aadhaar is valid?", message: `Confirm that this is ${member.name}’s Aadhaar card and the details match. ${start ? `The membership then starts ${start <= today ? "now" : `on ${formatDateLong(start)}`}, and its price is added to their dues.` : "Then choose the plan."}`, confirmLabel: "Yes, valid", icon: "check" })
+      ? await confirm({ title: "Aadhaar is valid?", message: `Confirm that this is ${member.name}’s Aadhaar card and the details match. Next, enter the fee: the plan${start ? `, start date (${start <= today ? "today" : formatDateLong(start)})` : ""} and payment method come from their form.`, confirmLabel: "Yes, valid", icon: "check" })
       : await confirm({ title: "Wrong document?", message: "The membership stays on hold. Ask them for the right Aadhaar; you can mark it valid after checking the original at the desk.", confirmLabel: "Mark as wrong", danger: true, icon: "close" });
     if (!ok) return;
     setError("");
@@ -62,7 +62,7 @@ export function AadhaarCheck({ member }: { member: Member }) {
     try {
       const result = await db.checkAadhaar(member.id, valid);
       await reload();
-      if (result === "needs_plan") openRenew(member.id); // no matching plan or no start date: the owner picks one
+      if (result === "verified") openRenew(member.id); // next step: enter the fee to start the membership
     } catch (err) {
       setError((err as Error).message);
     } finally {

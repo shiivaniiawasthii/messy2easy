@@ -3,7 +3,7 @@
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { ageOn, answerGroup, checkIntake, checkRegistration, INTAKE_SECTIONS, looksLikeAllowedFile, matchesNeed, memberNeeds } from "./intake.ts";
+import { ageOn, answerGroup, checkIntake, chosenPlan, checkRegistration, INTAKE_SECTIONS, looksLikeAllowedFile, matchesNeed, memberNeeds } from "./intake.ts";
 
 const TODAY = "2026-10-21";
 
@@ -106,5 +106,14 @@ describe("what members need", () => {
     assert.equal(ageOn("1998-10-22", "2026-10-21"), "27");
     assert.equal(ageOn("1998-10-21", "2026-10-21"), "28");
     assert.equal(ageOn("", "2026-10-21"), "");
+  });
+});
+
+describe("chosenPlan (start membership from the form)", () => {
+  it("uses the chosen duration, or the gym plan of older registrations", () => {
+    assert.deepEqual(chosenPlan({ planMonths: 3 }, []), { name: "3 Months", days: 90 });
+    assert.deepEqual(chosenPlan({ planMonths: 12 }, []), { name: "12 Months", days: 365 });
+    assert.deepEqual(chosenPlan({ planId: "p1" }, [{ id: "p1", name: "Quarterly", days: 91 }]), { name: "Quarterly", days: 91 });
+    assert.equal(chosenPlan({}, []), null);
   });
 });

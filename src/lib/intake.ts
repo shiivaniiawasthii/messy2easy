@@ -50,6 +50,16 @@ export const JOIN_PAYMENTS: [string, string][] = [["UPI", "Online (via UPI)"], [
  */
 export const STANDARD_PLANS: [number, string][] = [[1, "1 Month"], [3, "3 Months"], [6, "6 Months"], [12, "12 Months"]];
 
+/** Days of a chosen duration (same as registration_days() in the database). */
+export const STANDARD_PLAN_DAYS: Record<number, number> = { 1: 30, 3: 90, 6: 180, 12: 365 };
+
+/** The duration a registered person chose: from planMonths, or (older registrations) one of the gym's plans. */
+export function chosenPlan(a: Intake, plans: { id: string; name: string; days: number }[]): { name: string; days: number } | null {
+  if (a.planMonths && STANDARD_PLAN_DAYS[a.planMonths]) return { name: STANDARD_PLANS.find(([m]) => m === a.planMonths)?.[1] ?? `${a.planMonths} Months`, days: STANDARD_PLAN_DAYS[a.planMonths] };
+  const plan = a.planId ? plans.find((p) => p.id === a.planId) : undefined;
+  return plan ? { name: plan.name, days: plan.days } : null;
+}
+
 /** How far ahead a preferred start date may be. */
 export const MAX_START_DAYS = 60;
 

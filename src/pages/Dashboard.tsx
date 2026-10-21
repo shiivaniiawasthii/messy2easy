@@ -65,7 +65,7 @@ export function Dashboard({ setScreen }: { setScreen: (s: Screen) => void }) {
   const pending = data.members.filter((m) => memberStatus(m, today) === "Pending");
   const toCheck = pending.filter(needsAadhaarCheck).length;
   const toStart = pending.length - toCheck;
-  if (toStart > 0) focus.unshift({ id: "pending", icon: "check", tone: "amber", title: `${plural(toStart, "new member")} to activate`, detail: "Aadhaar checked · starts on their date, or activate now", value: String(toStart), onClick: () => openMembers({ status: "Pending" }) });
+  if (toStart > 0) focus.unshift({ id: "pending", icon: "check", tone: "amber", title: `${plural(toStart, "new member")} to activate`, detail: "Aadhaar checked · enter the fee to start their membership", value: String(toStart), onClick: () => openMembers({ status: "Pending" }) });
   if (toCheck > 0) focus.unshift({ id: "aadhaar", icon: "shield", tone: "rose", title: `${plural(toCheck, "Aadhaar")} to check`, detail: isOwner ? "New registrations · mark the Aadhaar valid to start them" : "New registrations · the owner checks the Aadhaar", value: String(toCheck), onClick: () => openMembers({ status: "Pending" }) });
 
   // When members come: use the period, or the last 30 days if there is too little data yet.

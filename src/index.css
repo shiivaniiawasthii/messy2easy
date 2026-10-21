@@ -1330,3 +1330,12 @@ div.needs-bar { cursor: default; }
 @media (max-width: 760px) {
   .aadhaar-actions .btn { flex-basis: 100%; }
 }
+
+/* Start membership: what the person chose on the form */
+.chosen-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 4px; }
+.chosen-summary span { display: grid; gap: 3px; padding: 10px 12px; border-radius: 10px; background: var(--primary-soft); color: var(--muted); font-size: 10px; }
+.chosen-summary strong { color: var(--ink); font-size: 14px; }
+@media (max-width: 760px) {
+  .chosen-summary span { font-size: 12px; }
+  .chosen-summary strong { font-size: 15px; }
+}
