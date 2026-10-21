@@ -57,47 +57,61 @@ const text = (v: unknown) => (typeof v === "string" ? v.trim().replace(/\s+/g, "
 
 type Checked<T> = { ok: true; value: T } | { ok: false; error: string };
 
+const asRecord = (raw: unknown) => (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+
+/** Checks the given questions (one step of the public form, or all of them). */
+export function checkQuestions(questions: IntakeSection["questions"], raw: unknown, required: boolean): Checked<Intake> {
+  const input = asRecord(raw);
+  const out: Intake = {};
+  for (const q of questions) {
+    if (q.kind === "yesno") {
+      const v = input[q.key];
+      if (typeof v === "boolean") out[q.key] = v;
+      else if (required) return { ok: false, error: `Answer: ${q.label}` };
+      continue;
+    }
+    const v = text(input[q.key]);
+    if (!v) { if (required) return { ok: false, error: `Answer: ${q.label}` }; continue; }
+    if (!q.options.includes(v) && !(q.other && v.length <= OTHER_MAX)) return { ok: false, error: q.other ? `Keep your own answer short (up to ${OTHER_MAX} characters): ${q.label}` : `Choose an option: ${q.label}` };
+    out[q.key] = v;
+  }
+  return { ok: true, value: out };
+}
+
+/** Weight in kg (20–300, one decimal). */
+export function checkWeight(raw: unknown, required: boolean): Checked<number | undefined> {
+  if (raw === undefined || raw === null || raw === "") return required ? { ok: false, error: "Enter your current weight in kg." } : { ok: true, value: undefined };
+  const weight = typeof raw === "number" ? raw : Number(text(raw));
+  if (!Number.isFinite(weight) || weight < 20 || weight > 300) return { ok: false, error: "Enter your current weight in kg (20 to 300)." };
+  return { ok: true, value: Math.round(weight * 10) / 10 };
+}
+
 /**
  * Cleans and checks answers. `required` (public form): every question must be answered.
  * Otherwise (owner's member form) only the answers given are checked.
  */
 export function checkIntake(raw: unknown, required: boolean): Checked<Intake> {
-  const input = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
-  const out: Intake = {};
-  for (const section of INTAKE_SECTIONS) {
-    for (const q of section.questions) {
-      if (q.kind === "yesno") {
-        const v = input[q.key];
-        if (typeof v === "boolean") out[q.key] = v;
-        else if (required) return { ok: false, error: `Answer: ${q.label}` };
-        continue;
-      }
-      const v = text(input[q.key]);
-      if (!v) { if (required) return { ok: false, error: `Answer: ${q.label}` }; continue; }
-      if (!q.options.includes(v) && !(q.other && v.length <= OTHER_MAX)) return { ok: false, error: q.other ? `Keep your own answer short (up to ${OTHER_MAX} characters): ${q.label}` : `Choose an option: ${q.label}` };
-      out[q.key] = v;
-    }
-  }
-  const weight = typeof input.weight === "number" ? input.weight : Number(text(input.weight));
-  if (input.weight !== undefined && input.weight !== "" && input.weight !== null) {
-    if (!Number.isFinite(weight) || weight < 20 || weight > 300) return { ok: false, error: "Enter your current weight in kg (20 to 300)." };
-    out.weight = Math.round(weight * 10) / 10;
-  } else if (required) return { ok: false, error: "Enter your current weight in kg." };
+  const input = asRecord(raw);
+  const answers = checkQuestions(INTAKE_SECTIONS.flatMap((s) => s.questions), input, required);
+  if (!answers.ok) return answers;
+  const out: Intake = { ...answers.value };
+  const weight = checkWeight(input.weight, required);
+  if (!weight.ok) return weight;
+  if (weight.value !== undefined) out.weight = weight.value;
   const comments = typeof input.comments === "string" ? input.comments.trim() : "";
   if (comments.length > 500) return { ok: false, error: "Keep comments under 500 characters." };
   if (comments) out.comments = comments;
   return { ok: true, value: out };
 }
 
-/** What the public form sends (the Aadhaar file travels separately). */
-export type RegistrationInput = {
-  name: string; phone: string; email: string; dob: string; gender: string; address: string; emergency: string;
-  intake: Intake;
-};
+export type PersonalDetails = { name: string; phone: string; email: string; dob: string; gender: string; address: string; emergency: string };
 
-/** Full check of a registration. `today` is the gym's date (IST, "YYYY-MM-DD"). */
-export function checkRegistration(raw: unknown, today: string): Checked<RegistrationInput> {
-  const input = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+/** What the public form sends (the Aadhaar file travels separately). */
+export type RegistrationInput = PersonalDetails & { intake: Intake };
+
+/** Step 1 of the public form. `today` is the gym's date (IST, "YYYY-MM-DD"). */
+export function checkPersonal(raw: unknown, today: string): Checked<PersonalDetails> {
+  const input = asRecord(raw);
   const name = text(input.name);
   const phone = cleanPhone(text(input.phone));
   const email = text(input.email).toLowerCase();
@@ -113,17 +127,33 @@ export function checkRegistration(raw: unknown, today: string): Checked<Registra
   if (address.length > 200) return { ok: false, error: "Address is too long. Keep it under 200 characters." };
   if (email && !isValidEmail(email)) return { ok: false, error: "Enter a valid email address, or leave it empty." };
   if (emergency && !isValidIndianMobile(emergency)) return { ok: false, error: "Enter a valid 10-digit emergency contact number, or leave it empty." };
+  return { ok: true, value: { name, phone, email, dob, gender, address, emergency } };
+}
 
-  const joining = (input.intake && typeof input.intake === "object" ? input.intake : {}) as Record<string, unknown>;
+/** Step 2 of the public form: plan, preferred start date, payment method and weight. */
+export function checkSubscription(raw: unknown, today: string): Checked<Pick<Intake, "planId" | "startDate" | "payment" | "weight">> {
+  const joining = asRecord(raw);
   const planId = text(joining.planId);
   const startDate = text(joining.startDate);
   const payment = text(joining.payment);
   if (!planId) return { ok: false, error: "Select your subscription plan." };
   if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate) || startDate < today || startDate > addDays(today, MAX_START_DAYS)) return { ok: false, error: `Choose a start date from today up to ${MAX_START_DAYS} days ahead.` };
   if (!JOIN_PAYMENTS.some(([v]) => v === payment)) return { ok: false, error: "Choose your preferred payment method." };
-  const answers = checkIntake(joining, true);
+  const weight = checkWeight(joining.weight, true);
+  if (!weight.ok) return weight;
+  return { ok: true, value: { planId, startDate, payment, weight: weight.value } };
+}
+
+/** Full check of a registration (what the server runs). `today` is the gym's date (IST, "YYYY-MM-DD"). */
+export function checkRegistration(raw: unknown, today: string): Checked<RegistrationInput> {
+  const input = asRecord(raw);
+  const personal = checkPersonal(input, today);
+  if (!personal.ok) return personal;
+  const subscription = checkSubscription(input.intake, today);
+  if (!subscription.ok) return subscription;
+  const answers = checkIntake(input.intake, true);
   if (!answers.ok) return answers;
-  return { ok: true, value: { name, phone, email, dob, gender, address, emergency, intake: { ...answers.value, planId, startDate, payment } } };
+  return { ok: true, value: { ...personal.value, intake: { ...answers.value, ...subscription.value } } };
 }
 
 // --- Aadhaar file ---

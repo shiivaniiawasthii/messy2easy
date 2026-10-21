@@ -1233,3 +1233,28 @@ div.table-row[role="button"]:hover { background: #fafcfb; }
   .register-form .register-section { font-size: 16px; }
   .aadhaar-row { font-size: 13px; }
 }
+
+/* Public registration form in steps */
+.login-card:has(.register-form) { width: min(560px, 100%); }
+.register-progress { display: grid; gap: 10px; margin: 6px 0 22px; padding: 14px 16px; border-radius: 12px; background: var(--primary-soft); }
+.register-progress > div:first-child { display: grid; gap: 3px; }
+.register-progress span { color: var(--primary); font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
+.register-progress strong { font: 700 18px "Manrope"; color: var(--ink); }
+.register-progress-bar { height: 6px; border-radius: 99px; background: white; overflow: hidden; }
+.register-progress-bar i { display: block; height: 100%; border-radius: 99px; background: var(--primary); transition: width .25s; }
+.register-step { display: grid; gap: 20px; }
+.register-form .field label, .register-form .choice-field legend { font-size: 13px; color: var(--ink); }
+.register-form .field label small, .register-form .choice-field legend small { font-size: 11px; }
+.register-form .choice-list label { font-size: 13px; }
+.register-form .field > input, .register-form .phone-input, .register-form .money-input, .register-form .field > textarea { font-size: 14px; }
+.register-nav { display: flex; gap: 10px; margin-top: 4px; }
+.register-nav .btn { flex: 1; min-height: 46px; font-size: 14px; }
+.register-nav .btn-secondary { flex: 0 0 34%; }
+@media (max-width: 760px) {
+  .register-progress { margin-bottom: 18px; }
+  .register-progress strong { font-size: 17px; }
+  .register-form .field label, .register-form .choice-field legend { font-size: 15px !important; }
+  .register-form .choice-list label { font-size: 15px !important; min-height: 50px; }
+  .register-form .field > input, .register-form .phone-input, .register-form .money-input, .register-form .field > textarea { font-size: 16px; }
+  .register-nav .btn { min-height: 50px; font-size: 16px; }
+}

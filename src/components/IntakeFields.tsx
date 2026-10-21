@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { type Intake } from "../data/types";
-import { type ChoiceQuestion, INTAKE_SECTIONS, OTHER_MAX, type YesNoQuestion } from "../lib/intake";
+import { type ChoiceQuestion, INTAKE_SECTIONS, type IntakeSection, OTHER_MAX, type YesNoQuestion } from "../lib/intake";
 
 /**
  * The joining-form questions (fitness goals, health, workout preferences, feedback).
@@ -9,10 +9,15 @@ import { type ChoiceQuestion, INTAKE_SECTIONS, OTHER_MAX, type YesNoQuestion } f
 export function IntakeFields({ value, onChange, required, idPrefix, sectionClass = "register-section" }: { value: Intake; onChange: (patch: Intake) => void; required: boolean; idPrefix: string; sectionClass?: string }) {
   return <>{INTAKE_SECTIONS.map((section) => <div className="intake-section" key={section.title}>
     <h2 className={sectionClass}>{section.title}</h2>
-    {section.questions.map((q) => q.kind === "choice"
-      ? <ChoiceField key={q.key} q={q} value={value[q.key] ?? ""} onChange={(v) => onChange({ [q.key]: v })} required={required} name={`${idPrefix}-${q.key}`}/>
-      : <YesNoField key={q.key} q={q} value={value[q.key]} onChange={(v) => onChange({ [q.key]: v })} required={required} name={`${idPrefix}-${q.key}`}/>)}
+    <SectionQuestions section={section} value={value} onChange={onChange} required={required} idPrefix={idPrefix}/>
   </div>)}</>;
+}
+
+/** The questions of one section (one step of the public form). */
+export function SectionQuestions({ section, value, onChange, required, idPrefix }: { section: IntakeSection; value: Intake; onChange: (patch: Intake) => void; required: boolean; idPrefix: string }) {
+  return <>{section.questions.map((q) => q.kind === "choice"
+    ? <ChoiceField key={q.key} q={q} value={value[q.key] ?? ""} onChange={(v) => onChange({ [q.key]: v })} required={required} name={`${idPrefix}-${q.key}`}/>
+    : <YesNoField key={q.key} q={q} value={value[q.key]} onChange={(v) => onChange({ [q.key]: v })} required={required} name={`${idPrefix}-${q.key}`}/>)}</>;
 }
 
 const Legend = ({ label, required }: { label: string; required: boolean }) => <legend>{label}{required ? <> <i>*</i></> : <> <small>Optional</small></>}</legend>;
