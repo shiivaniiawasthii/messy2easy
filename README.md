@@ -28,7 +28,7 @@ pnpm build
 - **Dashboard → Member registration form, or Members → Registration link (owner only):** create the gym's link, copy it, share it on WhatsApp or open
   the form. "Make a new link" stops the old one; "Turn off link" stops registrations.
 - **Public form** (`/?join=<token>`, no login, works on phones): the gym's joining questions (same as its old Google
-  Form): name, date of birth, gender, contact number; plan (the gym's own plans), preferred start date, payment method,
+  Form): name, date of birth, gender, contact number; plan (1, 3, 6 or 12 months; no prices shown), preferred start date, payment method,
   weight; fitness goals, health, workout preferences, feedback; and an **Aadhaar copy (required)**. Address, email,
   emergency contact and comments are optional. The person gets a member ID (e.g. `M-0042`).
   Questions and validation live in one file, `src/lib/intake.ts`, shared by the page and the server.

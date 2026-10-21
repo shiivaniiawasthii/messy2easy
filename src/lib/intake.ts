@@ -44,8 +44,8 @@ export const GENDERS = ["Male", "Female", "Other"];
 export const JOIN_PAYMENTS: [string, string][] = [["UPI", "Online (via UPI)"], ["Cash", "Offline (Cash)"]];
 
 /**
- * Plan choices when the gym hasn't created plans yet (same as its old Google Form).
- * The price is confirmed at the gym; activation then uses the matching real plan.
+ * Plan choices on the public form (same as the gym's old Google Form): durations only, no prices.
+ * The gym tells the price when the person joins; activation preselects the matching real plan.
  * Keep in sync with register_member (20261021120000_registration_standard_plans).
  */
 export const STANDARD_PLANS: [number, string][] = [[1, "1 Month"], [3, "3 Months"], [6, "6 Months"], [12, "12 Months"]];

@@ -17,7 +17,7 @@ export type Intake = Partial<Record<IntakeChoiceKey, string> & Record<IntakeYesN
   weight?: number;
   comments?: string;
   planId?: string;
-  /** Chosen from the standard durations (1/3/6/12) when the gym has no plans yet. */
+  /** Duration chosen on the public form (1/3/6/12 months, shown without prices). */
   planMonths?: number;
   planName?: string;
   startDate?: string;

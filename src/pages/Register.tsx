@@ -4,9 +4,8 @@ import { Icon } from "../components/Icon";
 import { SectionQuestions } from "../components/IntakeFields";
 import { Button } from "../components/ui";
 import { type Intake } from "../data/types";
-import { addDays, formatMoney, todayISO } from "../lib/format";
+import { addDays, todayISO } from "../lib/format";
 import { AADHAAR_ACCEPT, AADHAAR_MAX_BYTES, AADHAAR_TYPES, checkPersonal, checkQuestions, checkRegistration, checkSubscription, GENDERS, INTAKE_SECTIONS, JOIN_PAYMENTS, MAX_START_DAYS, STANDARD_PLANS } from "../lib/intake";
-import { durationLabel } from "../lib/members";
 import { loadRegistrationForm, type RegistrationGym, shrinkPhoto, submitRegistration } from "../lib/registration";
 
 type PageState =
@@ -88,11 +87,10 @@ function RegisterForm({ token, gym, onDone }: { token: string; gym: Registration
       <div className="field"><label htmlFor="reg-emergency">Emergency contact number {opt}</label><div className="phone-input"><span>+91</span><input id="reg-emergency" type="tel" inputMode="numeric" value={emergency} onChange={text(setEmergency)} placeholder="Family member’s mobile"/></div></div>
     </> },
     { title: "Subscription details", check: () => checkSubscription(allIntake, today), body: <>
+      {/* Durations only, no prices: the gym tells the price when the person joins. */}
       <fieldset className="choice-field"><legend>Select your subscription plan {req}</legend>
-        {gym.plans.length > 0
-          ? <div className="choice-list">{gym.plans.map((p) => <label key={p.id} className={intake.planId === p.id ? "selected" : ""}><input type="radio" name="reg-plan" checked={intake.planId === p.id} onChange={() => patch({ planId: p.id, planMonths: undefined })}/><span>{p.name}</span><small>{durationLabel(p.days)} · {formatMoney(p.price)}</small></label>)}</div>
-          // The gym hasn't set up plans yet: the standard durations, price confirmed at the gym.
-          : <><div className="choice-list">{STANDARD_PLANS.map(([months, label]) => <label key={months} className={intake.planMonths === months ? "selected" : ""}><input type="radio" name="reg-plan" checked={intake.planMonths === months} onChange={() => patch({ planMonths: months, planId: undefined })}/><span>{label}</span></label>)}</div><small className="field-help">The gym will confirm the price when you join.</small></>}
+        <div className="choice-list">{STANDARD_PLANS.map(([months, label]) => <label key={months} className={intake.planMonths === months ? "selected" : ""}><input type="radio" name="reg-plan" checked={intake.planMonths === months} onChange={() => patch({ planMonths: months })}/><span>{label}</span></label>)}</div>
+        <small className="field-help">The gym will tell you the price when you join.</small>
       </fieldset>
       <div className="field"><label htmlFor="reg-start">Preferred start date for membership {req}</label><input id="reg-start" type="date" min={today} max={addDays(today, MAX_START_DAYS)} value={intake.startDate ?? ""} onChange={(e) => patch({ startDate: e.target.value })}/></div>
       <fieldset className="choice-field"><legend>Preferred payment method {req}</legend><div className="choice-list">{JOIN_PAYMENTS.map(([v, label]) => <label key={v} className={intake.payment === v ? "selected" : ""}><input type="radio" name="reg-payment" checked={intake.payment === v} onChange={() => patch({ payment: v })}/><span>{label}</span></label>)}</div></fieldset>
