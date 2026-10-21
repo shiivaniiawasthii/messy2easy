@@ -5,7 +5,7 @@ import { Modal } from "../components/Modal";
 import { Button } from "../components/ui";
 import { type Member, type Payment, paymentMethods } from "../data/types";
 import { addDays, formatDate, formatDateLong, formatMoney, newId, nowLocal, parseMoney } from "../lib/format";
-import { chosenPlan, JOIN_PAYMENTS } from "../lib/intake";
+import { chosenPlan, JOIN_PAYMENTS, STANDARD_PLAN_DAYS, STANDARD_PLANS } from "../lib/intake";
 import { durationLabel, needsAadhaarCheck } from "../lib/members";
 import { useStore } from "../store/store";
 
@@ -82,41 +82,52 @@ function StartRegistration({ member, chosen, onClose }: { member: Member; chosen
   </Modal>;
 }
 
+/**
+ * Renew (or activate a member added in the app). With plans on the Plans page: pick one, its price applies.
+ * Without plans: pick 1/3/6/12 months and enter the fee (prefilled with the member's last duration and fee).
+ */
 function RenewForm({ memberId, onClose }: { memberId: string; onClose: () => void }) {
   const { data, today, reload } = useStore();
   const member = data.members.find((m) => m.id === memberId);
-  // A registration is activated with what the person chose on the form (plan, start date, payment method).
-  const chosen = member?.pending ? member.intake : {};
-  // "3 Months" chosen before the gym had plans → the plan of about that many days (1 month ≈ 30 days).
-  const byMonths = chosen.planMonths ? data.plans.find((p) => Math.abs(p.days - chosen.planMonths! * 30.4) <= chosen.planMonths! * 2 + 1) : undefined;
-  const initialPlan = data.plans.find((p) => p.id === chosen.planId) ?? byMonths ?? data.plans.find((p) => p.name === member?.plan) ?? data.plans[0];
+  const byDuration = data.plans.length === 0;
+  const lastMonths = Number(Object.entries(STANDARD_PLAN_DAYS).find(([, d]) => d === member?.planDays)?.[0] ?? 1);
+  const lastFee = byDuration && member && member.planPrice > 0 ? String(member.planPrice) : "";
+  const initialPlan = data.plans.find((p) => p.name === member?.plan) ?? data.plans[0];
   const [planId, setPlanId] = useState(initialPlan?.id ?? "");
-  const [startDate, setStartDate] = useState(chosen.startDate && chosen.startDate >= today ? chosen.startDate : member && member.expiryDate >= today ? addDays(member.expiryDate, 1) : today);
-  const [paid, setPaid] = useState(initialPlan ? String(initialPlan.price) : "");
-  const [method, setMethod] = useState(chosen.payment === "Cash" ? "Cash" : "UPI");
+  const [months, setMonths] = useState(lastMonths);
+  const [fee, setFee] = useState(lastFee);
+  const [startDate, setStartDate] = useState(member && !member.pending && member.expiryDate >= today ? addDays(member.expiryDate, 1) : today);
+  const [paid, setPaid] = useState(byDuration ? lastFee : initialPlan ? String(initialPlan.price) : "");
+  const [paidTouched, setPaidTouched] = useState(false);
+  const [method, setMethod] = useState("UPI");
   const [error, setError] = useState("");
   const [done, setDone] = useState<{ plan: string; expiry: string; payment: Payment | null } | null>(null);
   const [saving, setSaving] = useState(false);
   if (!member) return null;
   const plan = data.plans.find((p) => p.id === planId);
-  const price = plan?.price ?? 0;
+  const feeValue = fee.trim() === "" ? NaN : parseMoney(fee);
+  const price = byDuration ? (Number.isFinite(feeValue) ? feeValue : 0) : plan?.price ?? 0;
+  const days = byDuration ? STANDARD_PLAN_DAYS[months] : plan?.days;
+  const planName = byDuration ? STANDARD_PLANS.find(([m]) => m === months)?.[1] ?? `${months} Months` : plan?.name ?? "";
   const paidValue = paid.trim() === "" ? 0 : parseMoney(paid);
-  const expiry = plan ? addDays(startDate, plan.days - 1) : startDate;
+  const expiry = days ? addDays(startDate, days - 1) : startDate;
   const after = member.balance + price - (Number.isFinite(paidValue) ? paidValue : 0);
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!plan) return setError("Choose a plan. You can create plans on the Plans page.");
+    if (!byDuration && !plan) return setError("Choose a plan.");
+    if (byDuration && (!Number.isInteger(feeValue) || feeValue < 0)) return setError("Enter the fee in whole rupees.");
     if (!startDate) return setError("Choose a start date.");
     if (!Number.isInteger(paidValue) || paidValue < 0) return setError("Enter the amount received in whole rupees (0 if nothing was paid).");
     if (paidValue > member.balance + price) return setError(`Amount is more than the total due of ${formatMoney(member.balance + price)}.`);
     const createdAt = nowLocal();
-    const payment: Payment | null = paidValue > 0 ? { id: newId(), memberId: member.id, memberName: member.name, paidAt: createdAt, method, amount: paidValue, status: after <= 0 ? "Paid" : "Partial", description: `${plan.name} membership renewal`, addedBy: "", addedAt: createdAt } : null;
+    const payment: Payment | null = paidValue > 0 ? { id: newId(), memberId: member.id, memberName: member.name, paidAt: createdAt, method, amount: paidValue, status: after <= 0 ? "Paid" : "Partial", description: `${planName} membership renewal`, addedBy: "", addedAt: createdAt } : null;
     setError("");
     setSaving(true);
     try {
-      await db.renew({ memberId: member.id, planId: plan.id, startDate, paid: paidValue, method });
+      if (byDuration) await db.renewDuration({ memberId: member.id, months, fee: feeValue, startDate, paid: paidValue, method });
+      else await db.renew({ memberId: member.id, planId: plan!.id, startDate, paid: paidValue, method });
       await reload();
-      setDone({ plan: plan.name, expiry, payment });
+      setDone({ plan: planName, expiry, payment });
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -131,11 +142,12 @@ function RenewForm({ memberId, onClose }: { memberId: string; onClose: () => voi
   return <Modal title={title} subtitle={subtitle} onClose={onClose}>
     {done ? <div className="modal-success"><span className="success-icon"><Icon name="check" size={28}/></span><strong>{done.plan} plan until {formatDate(done.expiry)}</strong><p>{paidNow ? `${formatMoney(paidNow.amount)} received via ${paidNow.method}` : "No payment recorded yet. The amount is added to the member’s balance."}</p><Button onClick={onClose}>Done</Button></div>
     : <form onSubmit={submit} noValidate>
-      <div className="field"><label htmlFor="renew-plan">Plan</label><select id="renew-plan" value={planId} onChange={(e) => { const p = data.plans.find((x) => x.id === e.target.value); setPlanId(e.target.value); if (p) setPaid(String(p.price)); setError(""); }}>{data.plans.map((p) => <option key={p.id} value={p.id}>{p.name} — {durationLabel(p.days)} · {formatMoney(p.price)}</option>)}</select></div>
-      <div className="form-row"><div className="field"><label htmlFor="renew-start">Start date</label><input id="renew-start" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)}/></div><div className="field"><label htmlFor="renew-end">Valid until</label><input id="renew-end" value={plan ? formatDate(expiry) : "—"} readOnly/></div></div>
-      <div className="form-row"><div className="field"><label htmlFor="renew-paid">Amount received now</label><div className="money-input"><span>₹</span><input id="renew-paid" inputMode="numeric" value={paid} onChange={(e) => { setPaid(e.target.value); setError(""); }} placeholder="0"/></div></div><div className="field"><label htmlFor="renew-method">Payment method</label><select id="renew-method" value={method} onChange={(e) => setMethod(e.target.value)}>{paymentMethods.map((m) => <option key={m}>{m}</option>)}</select></div></div>
-      <div className="balance-box"><span>Plan price<strong>{formatMoney(price)}</strong></span><span>Previous balance<strong>{formatMoney(member.balance)}</strong></span><span>Balance after {activating ? "activation" : "renewal"}<strong className={after <= 0 ? "green-text" : "amber-text"}>{formatMoney(Math.max(0, after))}</strong></span></div>
-      {data.plans.length === 0 && <p className="form-note">No plans yet. Create one on the Plans page first.</p>}
+      {byDuration
+        ? <div className="form-row"><div className="field"><label htmlFor="renew-months">Plan</label><select id="renew-months" value={months} onChange={(e) => { setMonths(Number(e.target.value)); setError(""); }}>{STANDARD_PLANS.map(([m, label]) => <option key={m} value={m}>{label} — {durationLabel(STANDARD_PLAN_DAYS[m])}</option>)}</select></div><div className="field"><label htmlFor="renew-fee">Fee <i>*</i></label><div className="money-input"><span>₹</span><input id="renew-fee" inputMode="numeric" value={fee} onChange={(e) => { setFee(e.target.value); if (!paidTouched) setPaid(e.target.value); setError(""); }} placeholder="e.g. 1000"/></div></div></div>
+        : <div className="field"><label htmlFor="renew-plan">Plan</label><select id="renew-plan" value={planId} onChange={(e) => { const p = data.plans.find((x) => x.id === e.target.value); setPlanId(e.target.value); if (p && !paidTouched) setPaid(String(p.price)); setError(""); }}>{data.plans.map((p) => <option key={p.id} value={p.id}>{p.name} — {durationLabel(p.days)} · {formatMoney(p.price)}</option>)}</select></div>}
+      <div className="form-row"><div className="field"><label htmlFor="renew-start">Start date</label><input id="renew-start" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)}/></div><div className="field"><label htmlFor="renew-end">Valid until</label><input id="renew-end" value={days ? formatDate(expiry) : "—"} readOnly/></div></div>
+      <div className="form-row"><div className="field"><label htmlFor="renew-paid">Amount received now</label><div className="money-input"><span>₹</span><input id="renew-paid" inputMode="numeric" value={paid} onChange={(e) => { setPaid(e.target.value); setPaidTouched(true); setError(""); }} placeholder="0"/></div></div><div className="field"><label htmlFor="renew-method">Payment method</label><select id="renew-method" value={method} onChange={(e) => setMethod(e.target.value)}>{paymentMethods.map((m) => <option key={m}>{m}</option>)}</select></div></div>
+      <div className="balance-box"><span>{byDuration ? "Fee" : "Plan price"}<strong>{formatMoney(price)}</strong></span><span>Previous balance<strong>{formatMoney(member.balance)}</strong></span><span>Balance after {activating ? "activation" : "renewal"}<strong className={after <= 0 ? "green-text" : "amber-text"}>{formatMoney(Math.max(0, after))}</strong></span></div>
       {error && <p className="form-error">{error}</p>}
       <div className="modal-actions"><Button variant="ghost" onClick={onClose}>Cancel</Button><Button type="submit" disabled={saving}>{saving ? "Saving…" : activating ? "Activate membership" : "Renew membership"}</Button></div>
     </form>}

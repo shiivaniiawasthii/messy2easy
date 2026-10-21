@@ -100,6 +100,12 @@ export const db = {
     if (error) fail(error);
   },
 
+  /** Renew for 1/3/6/12 months at a fee (when the gym has no plans on the Plans page). */
+  async renewDuration(input: { memberId: string; months: number; fee: number; startDate: string; paid: number; method: string }) {
+    const { error } = await supabase.rpc("renew_with_duration", { p_member_id: input.memberId, p_months: input.months, p_fee: input.fee, p_start_date: input.startDate, p_paid_amount: input.paid, p_method: input.method });
+    if (error) fail(error);
+  },
+
   async checkIn(memberId: string) {
     const { data, error } = await supabase.from("attendance").insert({ member_id: memberId }).select("id, checked_in_at").single();
     if (error?.message === "already_checked_in") {
