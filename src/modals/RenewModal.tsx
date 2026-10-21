@@ -13,7 +13,9 @@ export function RenewModal({ memberId, onClose }: { memberId: string; onClose: (
   const member = data.members.find((m) => m.id === memberId);
   // A registration is activated with what the person chose on the form (plan, start date, payment method).
   const chosen = member?.pending ? member.intake : {};
-  const initialPlan = data.plans.find((p) => p.id === chosen.planId) ?? data.plans.find((p) => p.name === member?.plan) ?? data.plans[0];
+  // "3 Months" chosen before the gym had plans → the plan of about that many days (1 month ≈ 30 days).
+  const byMonths = chosen.planMonths ? data.plans.find((p) => Math.abs(p.days - chosen.planMonths! * 30.4) <= chosen.planMonths! * 2 + 1) : undefined;
+  const initialPlan = data.plans.find((p) => p.id === chosen.planId) ?? byMonths ?? data.plans.find((p) => p.name === member?.plan) ?? data.plans[0];
   const [planId, setPlanId] = useState(initialPlan?.id ?? "");
   const [startDate, setStartDate] = useState(chosen.startDate && chosen.startDate >= today ? chosen.startDate : member && member.expiryDate >= today ? addDays(member.expiryDate, 1) : today);
   const [paid, setPaid] = useState(initialPlan ? String(initialPlan.price) : "");

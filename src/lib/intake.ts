@@ -43,6 +43,13 @@ export const GENDERS = ["Male", "Female", "Other"];
 /** Preferred payment method for joining (stored value → label). */
 export const JOIN_PAYMENTS: [string, string][] = [["UPI", "Online (via UPI)"], ["Cash", "Offline (Cash)"]];
 
+/**
+ * Plan choices when the gym hasn't created plans yet (same as its old Google Form).
+ * The price is confirmed at the gym; activation then uses the matching real plan.
+ * Keep in sync with register_member (20261021120000_registration_standard_plans).
+ */
+export const STANDARD_PLANS: [number, string][] = [[1, "1 Month"], [3, "3 Months"], [6, "6 Months"], [12, "12 Months"]];
+
 /** How far ahead a preferred start date may be. */
 export const MAX_START_DAYS = 60;
 
@@ -131,17 +138,19 @@ export function checkPersonal(raw: unknown, today: string): Checked<PersonalDeta
 }
 
 /** Step 2 of the public form: plan, preferred start date, payment method and weight. */
-export function checkSubscription(raw: unknown, today: string): Checked<Pick<Intake, "planId" | "startDate" | "payment" | "weight">> {
+export function checkSubscription(raw: unknown, today: string): Checked<Pick<Intake, "planId" | "planMonths" | "startDate" | "payment" | "weight">> {
   const joining = asRecord(raw);
   const planId = text(joining.planId);
+  const planMonths = Number(joining.planMonths);
+  const standard = !planId && STANDARD_PLANS.some(([m]) => m === planMonths);
   const startDate = text(joining.startDate);
   const payment = text(joining.payment);
-  if (!planId) return { ok: false, error: "Select your subscription plan." };
+  if (!planId && !standard) return { ok: false, error: "Select your subscription plan." };
   if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate) || startDate < today || startDate > addDays(today, MAX_START_DAYS)) return { ok: false, error: `Choose a start date from today up to ${MAX_START_DAYS} days ahead.` };
   if (!JOIN_PAYMENTS.some(([v]) => v === payment)) return { ok: false, error: "Choose your preferred payment method." };
   const weight = checkWeight(joining.weight, true);
   if (!weight.ok) return weight;
-  return { ok: true, value: { planId, startDate, payment, weight: weight.value } };
+  return { ok: true, value: standard ? { planMonths, startDate, payment, weight: weight.value } : { planId, startDate, payment, weight: weight.value } };
 }
 
 /** Full check of a registration (what the server runs). `today` is the gym's date (IST, "YYYY-MM-DD"). */

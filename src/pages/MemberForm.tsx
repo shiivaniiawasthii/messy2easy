@@ -56,8 +56,8 @@ export function MemberForm({ editingId, setScreen }: { editingId: string | null;
     const answers = checkIntake({ ...intake, weight: weight.trim() === "" ? undefined : Number(weight) }, false);
     if (!answers.ok) return fail(answers.error);
     // Keep what a registered person chose when joining (plan, start date, payment); it isn't edited here.
-    const { planId, planName, startDate, payment } = editing?.intake ?? {};
-    const savedIntake: Intake = JSON.parse(JSON.stringify({ planId, planName, startDate, payment, ...answers.value }));
+    const { planId, planMonths, planName, startDate, payment } = editing?.intake ?? {};
+    const savedIntake: Intake = JSON.parse(JSON.stringify({ planId, planMonths, planName, startDate, payment, ...answers.value }));
     setDuplicate(null);
     if (editing) {
       setSaving(true);

@@ -44,6 +44,18 @@ describe("checkRegistration", () => {
     }
   });
 
+  it("accepts a standard duration (1/3/6/12 months) when the gym has no plans", () => {
+    const v = valid();
+    (v.intake as Record<string, unknown>).planId = "";
+    (v.intake as Record<string, unknown>).planMonths = 3;
+    const r = checkRegistration(v, TODAY);
+    assert.ok(r.ok);
+    assert.equal(r.value.intake.planMonths, 3);
+    assert.equal(r.value.intake.planId, undefined);
+    (v.intake as Record<string, unknown>).planMonths = 2;
+    assert.equal(checkRegistration(v, TODAY).ok, false);
+  });
+
   it("requires every question; 'Other' takes short own text only where allowed", () => {
     const v = valid();
     delete (v.intake as Record<string, unknown>).medical;

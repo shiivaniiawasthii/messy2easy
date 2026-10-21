@@ -11,12 +11,14 @@ export type IntakeYesNoKey = "medical" | "medications" | "dietRestrictions" | "p
 /**
  * Answers to the joining form (members.intake). All optional in the type: old members and members
  * added in the app may have none. Questions and validation: src/lib/intake.ts.
- * planId/planName/startDate/payment are what a registered person chose (used to prefill activation).
+ * planId (or planMonths)/planName/startDate/payment are what a registered person chose (used to prefill activation).
  */
 export type Intake = Partial<Record<IntakeChoiceKey, string> & Record<IntakeYesNoKey, boolean>> & {
   weight?: number;
   comments?: string;
   planId?: string;
+  /** Chosen from the standard durations (1/3/6/12) when the gym has no plans yet. */
+  planMonths?: number;
   planName?: string;
   startDate?: string;
   payment?: string;
