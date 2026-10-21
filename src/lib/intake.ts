@@ -165,6 +165,59 @@ export function checkRegistration(raw: unknown, today: string): Checked<Registra
   return { ok: true, value: { ...personal.value, intake: { ...answers.value, ...subscription.value } } };
 }
 
+// --- Reading the answers: what each member needs (Members list, profile, dashboard, report) ---
+
+/** "Morning (6 AM – 10 AM)" → "Morning", "Beginner (0–6 months)" → "Beginner". */
+export const shortAnswer = (v: string) => v.replace(/\s*\(.*\)\s*$/, "");
+
+const optionsOf = (key: string) => INTAKE_SECTIONS.flatMap((s) => s.questions).find((q) => q.key === key);
+const choiceOptions = (key: string) => { const q = optionsOf(key); return q && q.kind === "choice" ? q.options : []; };
+
+/** Filter choices on the Members page (an "Other" answer counts as "Other"). */
+export const GOAL_FILTERS = ["All", ...choiceOptions("goal"), "Other"];
+export const TIME_FILTERS = ["All", ...choiceOptions("workoutTime").map(shortAnswer), "Other"];
+export const NEED_FILTERS = ["All", "Personal training", "Diet plan", "Health check", "Beginners", "No answers yet"];
+
+/** Which option group an answer belongs to ("Other" for own text). */
+export function answerGroup(key: "goal" | "workoutTime", value: string | undefined) {
+  if (!value) return "";
+  return choiceOptions(key).includes(value) ? (key === "workoutTime" ? shortAnswer(value) : value) : "Other";
+}
+
+export const hasAnswers = (a: Intake) => INTAKE_SECTIONS.some((s) => s.questions.some((q) => a[q.key] !== undefined && a[q.key] !== ""));
+export const needsHealthCheck = (a: Intake) => !!(a.medical || a.medications);
+
+export function matchesNeed(a: Intake, filter: string) {
+  if (filter === "Personal training") return a.personalTraining === true;
+  if (filter === "Diet plan") return a.dietHelp === true;
+  if (filter === "Health check") return needsHealthCheck(a);
+  if (filter === "Beginners") return !!a.experience?.startsWith("Beginner");
+  if (filter === "No answers yet") return !hasAnswers(a);
+  return true;
+}
+
+export type NeedTag = { label: string; tone: "danger" | "warning" | "success" | "info" | "violet" | "neutral" };
+
+/** Short tags, most important first: health, what they want from the gym, goal, time. */
+export function memberNeeds(a: Intake): NeedTag[] {
+  const tags: NeedTag[] = [];
+  if (needsHealthCheck(a)) tags.push({ label: a.medical ? "Medical / injury" : "On medication", tone: "danger" });
+  if (a.personalTraining) tags.push({ label: "Wants PT", tone: "violet" });
+  if (a.dietHelp) tags.push({ label: "Diet plan", tone: "success" });
+  if (a.goal) tags.push({ label: a.goal, tone: "info" });
+  if (a.workoutTime) tags.push({ label: shortAnswer(a.workoutTime), tone: "neutral" });
+  if (a.experience?.startsWith("Beginner")) tags.push({ label: "Beginner", tone: "warning" });
+  return tags;
+}
+
+/** Age in whole years on `today` ("" without a date of birth). */
+export function ageOn(dob: string, today: string) {
+  if (!dob) return "";
+  const [y, m, d] = dob.split("-").map(Number);
+  const [ty, tm, td] = today.split("-").map(Number);
+  return String(ty - y - (tm < m || (tm === m && td < d) ? 1 : 0));
+}
+
 // --- Aadhaar file ---
 
 export const AADHAAR_MAX_BYTES = 10 * 1024 * 1024;

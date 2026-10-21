@@ -65,6 +65,14 @@ function RegisterForm({ token, gym, onDone }: { token: string; gym: Registration
   const [weight, setWeight] = useState("");
   const [intake, setIntake] = useState<Intake>({ startDate: today });
   const [aadhaar, setAadhaar] = useState<File | null>(null);
+  // Thumbnail of the chosen photo (PDF/HEIC can't be shown: just the file name).
+  const [preview, setPreview] = useState("");
+  useEffect(() => {
+    if (!aadhaar || !["image/jpeg", "image/png", "image/webp"].includes(aadhaar.type)) { setPreview(""); return; }
+    const url = URL.createObjectURL(aadhaar);
+    setPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [aadhaar]);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const errorRef = useRef<HTMLParagraphElement>(null);
@@ -102,10 +110,20 @@ function RegisterForm({ token, gym, onDone }: { token: string; gym: Registration
       body: <SectionQuestions section={section} value={intake} onChange={patch} required idPrefix="reg"/>,
     })),
     { title: "Identification", check: () => (aadhaar ? { ok: true as const } : { ok: false as const, error: "Upload a copy of your Aadhaar card." }), body: <>
-      <div className="field"><label htmlFor="reg-aadhaar">Upload a copy of your Aadhaar card {req}</label>
-        <label className={`file-pick ${aadhaar ? "picked" : ""}`} htmlFor="reg-aadhaar"><Icon name={aadhaar ? "check" : "download"} size={18}/><span>{aadhaar ? aadhaar.name : "Choose photo or PDF"}</span></label>
-        <input id="reg-aadhaar" className="visually-hidden" type="file" accept={AADHAAR_ACCEPT} onChange={(e) => pickFile(e.target.files?.[0] ?? null)}/>
-        <small className="field-help">Photo or PDF, up to 10 MB. Only the gym owner can see it.</small>
+      <div className="field"><span className="field-title">Upload a copy of your Aadhaar card {req}</span>
+        {/* Camera: opens the phone camera straight away (computers show the file picker instead). */}
+        <div className="aadhaar-pick">
+          <label className="file-pick" htmlFor="reg-aadhaar-camera"><Icon name="camera" size={20}/><span>{aadhaar ? "Take again" : "Take photo"}</span></label>
+          <label className="file-pick" htmlFor="reg-aadhaar-file"><Icon name="download" size={18}/><span>Choose file</span></label>
+        </div>
+        <input id="reg-aadhaar-camera" className="visually-hidden" type="file" accept="image/*" capture="environment" onChange={(e) => { pickFile(e.target.files?.[0] ?? null); e.target.value = ""; }}/>
+        <input id="reg-aadhaar-file" className="visually-hidden" type="file" accept={AADHAAR_ACCEPT} onChange={(e) => { pickFile(e.target.files?.[0] ?? null); e.target.value = ""; }}/>
+        {aadhaar && <div className="aadhaar-preview">
+          {preview ? <img src={preview} alt="Your Aadhaar photo"/> : <span className="large-icon"><Icon name="check"/></span>}
+          <span><strong>{aadhaar.name}</strong><small>{(aadhaar.size / (1024 * 1024)).toFixed(1)} MB · ready to upload</small></span>
+          <button type="button" className="text-btn danger-text" onClick={() => setAadhaar(null)}>Remove</button>
+        </div>}
+        <small className="field-help">Take a clear photo of the card with all text readable, or upload a photo/PDF (up to 10 MB). Only the gym owner can see it.</small>
       </div>
       <div className="field"><label htmlFor="reg-comments">Any specific requests or comments? {opt}</label><textarea id="reg-comments" rows={3} maxLength={500} value={intake.comments ?? ""} onChange={(e) => patch({ comments: e.target.value })}/></div>
     </> },

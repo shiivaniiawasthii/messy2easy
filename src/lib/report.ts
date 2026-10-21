@@ -4,6 +4,7 @@
 
 import { type AppData } from "../data/types";
 import { addDays, formatDate, formatMoney, MONTHS_LONG, parseDate, toISODate } from "./format";
+import { ageOn, INTAKE_SECTIONS } from "./intake";
 import { expiredWithin, expiringWithin, firstMembershipIds, lastVisits, memberStatus, membersWithDues, stoppedComing } from "./members";
 import { inRange, type DateRange } from "./periods";
 import { buildDailySummary } from "./summary";
@@ -110,8 +111,13 @@ export function reportSheets(data: AppData, r: Report): Sheet[] {
     ["", "", "", "", "Total", r.collected, "", ""]];
   const checkins: Cell[][] = [["Date", "Time", "Member", "Marked by"], ...r.checkins.map((a): Cell[] => [formatDate(a.at), time(a.at), a.memberName, a.by])];
   const expenses: Cell[][] = [["Date", "Category", "Method", "Amount (₹)", "Note"], ...r.expenses.map((e): Cell[] => [formatDate(e.date), e.category, e.method, e.amount, e.note]), ["", "", "Total", r.spent, ""]];
-  const members: Cell[][] = [["Code", "Name", "Mobile", "Plan", "Started", "Valid until", "Status", "Due (₹)", "Last visit", "Joined"],
-    ...[...data.members].sort((a, b) => a.name.localeCompare(b.name)).map((m): Cell[] => [m.code, m.name, m.phone, m.plan, formatDate(m.startDate), formatDate(m.expiryDate), memberStatus(m, r.today), m.balance > 0 ? m.balance : 0, r.lastVisit.get(m.id) ? formatDate(r.lastVisit.get(m.id)!) : "Never", formatDate(m.joined)])];
+  // Everything about the member, including the joining-form answers (the Aadhaar file stays in the app).
+  const yesNo = (v: boolean | undefined) => (v === undefined ? "" : v ? "Yes" : "No");
+  const members: Cell[][] = [["Code", "Name", "Mobile", "Plan", "Started", "Valid until", "Status", "Due (₹)", "Last visit", "Joined", "Joined via", "Gender", "Age", "Email", "Address", "Emergency contact", "Weight (kg)",
+    ...INTAKE_SECTIONS.flatMap((s) => s.questions.map((q) => q.short)), "Comments"],
+    ...[...data.members].sort((a, b) => a.name.localeCompare(b.name)).map((m): Cell[] => [m.code, m.name, m.phone, m.pending ? "Not activated" : m.plan, m.pending ? "" : formatDate(m.startDate), m.pending ? "" : formatDate(m.expiryDate), memberStatus(m, r.today), m.balance > 0 ? m.balance : 0, r.lastVisit.get(m.id) ? formatDate(r.lastVisit.get(m.id)!) : "Never", formatDate(m.joined),
+      m.source === "form" ? "Registration form" : "Added in app", m.gender, ageOn(m.dob, r.today), m.email, m.address, m.emergency, m.intake.weight ?? "",
+      ...INTAKE_SECTIONS.flatMap((s) => s.questions.map((q): Cell => (q.kind === "yesno" ? yesNo(m.intake[q.key]) : m.intake[q.key] ?? ""))), m.intake.comments ?? ""])];
   const follow: Cell[][] = [["What to do", "Member", "Mobile", "Detail"],
     ...r.expiring.map((m): Cell[] => ["Remind to renew (expiring soon)", m.name, m.phone, `Ends ${formatDate(m.expiryDate)}`]),
     ...r.expired.map((m): Cell[] => ["Call to win back (expired)", m.name, m.phone, `Ended ${formatDate(m.expiryDate)}`]),
@@ -122,7 +128,7 @@ export function reportSheets(data: AppData, r: Report): Sheet[] {
     { name: "Payments", rows: payments, widths: [13, 10, 24, 13, 14, 12, 18, 30] },
     { name: "Check-ins", rows: checkins, widths: [13, 10, 24, 18] },
     { name: "Expenses", rows: expenses, widths: [13, 22, 14, 12, 30] },
-    { name: "Members", rows: members, widths: [9, 24, 13, 16, 13, 13, 11, 10, 13, 13] },
+    { name: "Members", rows: members, widths: [9, 24, 13, 16, 13, 13, 11, 10, 13, 13, 17, 8, 6, 24, 30, 16, 11, ...INTAKE_SECTIONS.flatMap((s) => s.questions.map(() => 20)), 30] },
     { name: "Follow up", rows: follow, widths: [32, 24, 13, 26] },
   ];
 }

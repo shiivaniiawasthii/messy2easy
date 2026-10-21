@@ -8,6 +8,7 @@ import { StatCard } from "../components/StatCard";
 import { Avatar, Badge, Button } from "../components/ui";
 import { type Member, type Renewal } from "../data/types";
 import { addDays, DAYS_LONG, diffDays, formatDate, formatMoney, formatPhone, formatShortMoney, initialsOf, MONTHS, MONTHS_LONG, parseDate, parseDateTime, relativeTime } from "../lib/format";
+import { MemberNeedsPanel } from "../components/MemberNeedsPanel";
 import { RegistrationPanel } from "../components/RegistrationPanel";
 import { expiredWithin, expiringWithin, firstMembershipIds, lastVisits, memberStatus, membersWithDues, plural, stoppedComing } from "../lib/members";
 import { type Bucket, collectionBuckets, type DateRange, hourLabel, inRange, type Period, periodRanges, PERIODS, shortHour, WEEKDAYS } from "../lib/periods";
@@ -142,6 +143,7 @@ export function Dashboard({ setScreen }: { setScreen: (s: Screen) => void }) {
         </div>
       </div>
     </section>
+    <MemberNeedsPanel/>
     {isOwner && <RegistrationPanel/>}
     {showInactive && <InactiveMembersModal members={inactive} lastVisit={lastVisit} onClose={() => setShowInactive(false)}/>}
   </div>;

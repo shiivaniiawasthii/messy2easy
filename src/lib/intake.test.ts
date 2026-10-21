@@ -3,7 +3,7 @@
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { checkIntake, checkRegistration, INTAKE_SECTIONS, looksLikeAllowedFile } from "./intake.ts";
+import { ageOn, answerGroup, checkIntake, checkRegistration, INTAKE_SECTIONS, looksLikeAllowedFile, matchesNeed, memberNeeds } from "./intake.ts";
 
 const TODAY = "2026-10-21";
 
@@ -84,5 +84,27 @@ describe("looksLikeAllowedFile", () => {
     assert.ok(looksLikeAllowedFile("image/jpeg", new Uint8Array([0xff, 0xd8, 0xff, 0xe0])));
     assert.equal(looksLikeAllowedFile("image/jpeg", pdf), false);
     assert.equal(looksLikeAllowedFile("text/html", pdf), false);
+  });
+});
+
+describe("what members need", () => {
+  it("tags health first, then PT / diet, goal, time and beginner", () => {
+    const tags = memberNeeds({ medical: true, personalTraining: true, dietHelp: false, goal: "Muscle Gain", workoutTime: "Evening (4 PM – 11 PM)", experience: "Beginner (0–6 months)" }).map((t) => t.label);
+    assert.deepEqual(tags, ["Medical / injury", "Wants PT", "Muscle Gain", "Evening", "Beginner"]);
+    assert.deepEqual(memberNeeds({}), []);
+  });
+
+  it("filters: needs, goal and time groups ('Other' for own answers)", () => {
+    assert.ok(matchesNeed({ medications: true }, "Health check"));
+    assert.equal(matchesNeed({ dietHelp: false }, "Diet plan"), false);
+    assert.ok(matchesNeed({}, "No answers yet"));
+    assert.equal(answerGroup("goal", "Boxing"), "Other");
+    assert.equal(answerGroup("workoutTime", "Morning (6 AM – 10 AM)"), "Morning");
+  });
+
+  it("age in whole years", () => {
+    assert.equal(ageOn("1998-10-22", "2026-10-21"), "27");
+    assert.equal(ageOn("1998-10-21", "2026-10-21"), "28");
+    assert.equal(ageOn("", "2026-10-21"), "");
   });
 });
