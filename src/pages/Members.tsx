@@ -8,7 +8,7 @@ import { SearchBox } from "../components/SearchBox";
 import { Avatar, Badge, Button } from "../components/ui";
 import { type Member } from "../data/types";
 import { diffDays, digitsOnly, formatDate, formatMoney, formatPhone, initialsOf } from "../lib/format";
-import { answerGroup, GOAL_FILTERS, matchesNeed, memberNeeds, NEED_FILTERS, TIME_FILTERS } from "../lib/intake";
+import { answerGroup, GOAL_FILTERS, HEARD_FILTERS, matchesNeed, memberNeeds, NEED_FILTERS, TIME_FILTERS } from "../lib/intake";
 import { isExpiringSoon, memberStatus, paymentState, paymentTone, statusTone } from "../lib/members";
 import { type Screen } from "../navigation";
 import { useStore } from "../store/store";
@@ -23,11 +23,11 @@ export const PAYMENT_OPTIONS = ["All", "Paid", "Has dues", "Partial", "Unpaid"];
 export const SOURCE_OPTIONS = ["All", "Registration form", "Added in app"];
 
 // Kept in App so filters survive opening a member and coming back.
-// need / goal / time come from the joining-form answers (what the member wants).
-export type MemberView = { status: string; plan: string; payment: string; expiry: string; source: string; need: string; goal: string; time: string; page: number; showFilters: boolean };
+// need / goal / time / heard come from the joining-form answers (what the member wants, how they found the gym).
+export type MemberView = { status: string; plan: string; payment: string; expiry: string; source: string; need: string; goal: string; time: string; heard: string; page: number; showFilters: boolean };
 
 /** Every filter (not the status tab) back to "All". */
-const NO_FILTERS = { plan: "All", payment: "All", expiry: "Any", source: "All", need: "All", goal: "All", time: "All" };
+const NO_FILTERS = { plan: "All", payment: "All", expiry: "Any", source: "All", need: "All", goal: "All", time: "All", heard: "All" };
 
 export const defaultMemberView: MemberView = { status: "All", ...NO_FILTERS, page: 0, showFilters: false };
 
@@ -72,8 +72,9 @@ export function Members({ setScreen, query, setQuery, view, setView }: { setScre
       matchesNeed(m.intake, view.need) &&
       (view.goal === "All" || answerGroup("goal", m.intake.goal) === view.goal) &&
       (view.time === "All" || answerGroup("workoutTime", m.intake.workoutTime) === view.time) &&
+      (view.heard === "All" || answerGroup("heardFrom", m.intake.heardFrom) === view.heard) &&
       (expiryDays === null || (memberStatus(m, today) === "Active" && diffDays(m.expiryDate, today) <= expiryDays)));
-  }, [data.members, query, view.status, view.plan, view.payment, view.expiry, view.source, view.need, view.goal, view.time, today]);
+  }, [data.members, query, view.status, view.plan, view.payment, view.expiry, view.source, view.need, view.goal, view.time, view.heard, today]);
   const pageCount = Math.max(1, Math.ceil(filtered.length / MEMBER_PAGE_SIZE));
   const safePage = Math.min(view.page, pageCount - 1);
   const visible = filtered.slice(safePage * MEMBER_PAGE_SIZE, (safePage + 1) * MEMBER_PAGE_SIZE);
@@ -85,6 +86,7 @@ export function Members({ setScreen, query, setQuery, view, setView }: { setScre
   if (view.need !== "All") chips.push({ label: `Needs: ${view.need}`, clear: { need: "All" } });
   if (view.goal !== "All") chips.push({ label: `Goal: ${view.goal}`, clear: { goal: "All" } });
   if (view.time !== "All") chips.push({ label: `Time: ${view.time}`, clear: { time: "All" } });
+  if (view.heard !== "All") chips.push({ label: `Found us via: ${view.heard}`, clear: { heard: "All" } });
   const total = data.members.length;
   const active = data.members.filter((m) => memberStatus(m, today) === "Active").length;
   const pending = data.members.filter((m) => memberStatus(m, today) === "Pending").length;
@@ -123,6 +125,7 @@ export function Members({ setScreen, query, setQuery, view, setView }: { setScre
         <FilterGroup label="Needs" options={NEED_FILTERS} value={view.need} onChange={(v) => set({ need: v })}/>
         <FilterGroup label="Goal" options={GOAL_FILTERS} value={view.goal} onChange={(v) => set({ goal: v })}/>
         <FilterGroup label="Workout time" options={TIME_FILTERS} value={view.time} onChange={(v) => set({ time: v })}/>
+        <FilterGroup label="Found us via" options={HEARD_FILTERS} value={view.heard} onChange={(v) => set({ heard: v })}/>
         {chips.length > 0 && <button className="text-btn" onClick={clearFilters}>Clear filters</button>}
       </div>}
       {!view.showFilters && chips.length > 0 && <div className="filter-bar filter-summary"><span className="filter-summary-label">Filtered by</span>{chips.map((c) => <button className="filter-chip" key={c.label} onClick={() => set(c.clear)} title="Remove filter">{c.label}<Icon name="close" size={12}/></button>)}<button className="text-btn" onClick={clearFilters}>Clear filters</button></div>}

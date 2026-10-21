@@ -176,12 +176,20 @@ const choiceOptions = (key: string) => { const q = optionsOf(key); return q && q
 /** Filter choices on the Members page (an "Other" answer counts as "Other"). */
 export const GOAL_FILTERS = ["All", ...choiceOptions("goal"), "Other"];
 export const TIME_FILTERS = ["All", ...choiceOptions("workoutTime").map(shortAnswer), "Other"];
+export const HEARD_FILTERS = ["All", ...choiceOptions("heardFrom"), "Other"];
 export const NEED_FILTERS = ["All", "Personal training", "Diet plan", "Health check", "Beginners", "No answers yet"];
 
-/** Which option group an answer belongs to ("Other" for own text). */
-export function answerGroup(key: "goal" | "workoutTime", value: string | undefined) {
+/** Which option group an answer belongs to ("Other" for own text). Times are shortened ("Morning"). */
+export function answerGroup(key: IntakeChoiceKey, value: string | undefined) {
   if (!value) return "";
   return choiceOptions(key).includes(value) ? (key === "workoutTime" ? shortAnswer(value) : value) : "Other";
+}
+
+/** All groups of a question, in form order, "Other" last when the question allows it. */
+export function answerGroups(key: IntakeChoiceKey) {
+  const q = optionsOf(key);
+  if (!q || q.kind !== "choice") return [];
+  return [...q.options.map((o) => (key === "workoutTime" ? shortAnswer(o) : o)), ...(q.other ? ["Other"] : [])];
 }
 
 export const hasAnswers = (a: Intake) => INTAKE_SECTIONS.some((s) => s.questions.some((q) => a[q.key] !== undefined && a[q.key] !== ""));

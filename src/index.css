@@ -1311,3 +1311,11 @@ div.table-row[role="button"]:hover { background: #fafcfb; }
   .aadhaar-preview strong { font-size: 14px; }
   .aadhaar-preview small { font-size: 12px; }
 }
+
+/* Member insights: % next to counts */
+.needs-bar { grid-template-columns: minmax(90px, 1.2fr) 2fr 38px 26px; }
+.needs-bar strong { text-align: right; }
+.needs-bar small { color: var(--muted); text-align: right; }
+div.needs-bar { cursor: default; }
+.needs-tiles strong em { font: 600 12px "Manrope"; font-style: normal; color: var(--muted); margin-left: 4px; }
+.plan-split-title small { color: var(--muted); font-weight: 400; }
