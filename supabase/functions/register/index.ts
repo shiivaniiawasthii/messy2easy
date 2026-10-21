@@ -7,8 +7,8 @@
 //   aadhaar  the Aadhaar copy (JPEG/PNG/WEBP/HEIC/PDF, max 10 MB)
 //
 // Order: check answers (src/lib/intake.ts) → check the file (size, type and its first bytes)
-// → store it in the private `member-documents` bucket → register_member (checks the link, plan,
-// duplicates, hourly limit). If registration fails the file is removed again.
+// → check the link → store the file in the private `member-documents` bucket → register_member
+// (checks the link again, plan, duplicates, hourly limit). If registration fails the file is removed.
 // Deploy: npx supabase functions deploy register --no-verify-jwt   (visitors have no login token)
 
 import { createClient } from "npm:@supabase/supabase-js@2";
@@ -58,6 +58,14 @@ Deno.serve(async (req) => {
   if (!ext || !looksLikeAllowedFile(file.type, bytes.subarray(0, 16))) return reply(400, { error: "Upload the Aadhaar as a photo (JPG, PNG) or a PDF." });
 
   const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
+
+  // Check the link before storing anything, so a wrong link can't be used to upload files.
+  const gym = await admin.rpc("registration_form", { p_token: token }).maybeSingle();
+  if (gym.error) {
+    console.error("registration_form failed", gym.error);
+    return reply(500, { error: "Couldn't submit the form. Please try again." });
+  }
+  if (!gym.data) return reply(400, { error: REGISTRATION_ERRORS.link_invalid });
 
   // A random name: the file is found through members.aadhaar_path, never by guessing a path.
   const path = `aadhaar/${crypto.randomUUID()}.${ext}`;
