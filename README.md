@@ -27,8 +27,16 @@ pnpm build
 
 - **Dashboard → Member registration form, or Members → Registration link (owner only):** create the gym's link, copy it, share it on WhatsApp or open
   the form. "Make a new link" stops the old one; "Turn off link" stops registrations.
-- **Public form** (`/?join=<token>`, no login, works on phones): name and mobile required; email, date of birth, gender,
-  address and emergency contact optional. The person gets a member ID (e.g. `M-0042`).
+- **Public form** (`/?join=<token>`, no login, works on phones): the gym's joining questions (same as its old Google
+  Form): name, date of birth, gender, contact number; plan (the gym's own plans), preferred start date, payment method,
+  weight; fitness goals, health, workout preferences, feedback; and an **Aadhaar copy (required)**. Address, email,
+  emergency contact and comments are optional. The person gets a member ID (e.g. `M-0042`).
+  Questions and validation live in one file, `src/lib/intake.ts`, shared by the page and the server.
+- **Submitting** goes through the `register` Edge Function (`supabase/functions/register`): it re-checks every answer,
+  checks the file (photo or PDF, max 10 MB, real file type), stores it in the private `member-documents` bucket and
+  then registers the member. Only the gym's **owner** can open the Aadhaar (profile → View Aadhaar, a 1-minute link).
+  Deploy: `npx supabase functions deploy register --no-verify-jwt`.
+- Activating a registration starts with the plan, start date and payment method the person chose.
 - The registration shows up in **Members** with status **Pending** (also in Dashboard → Focus here, the owner's bell and
   Attendance search). **Activate** = choose a plan and start date (end date is calculated) and record the payment.
 - Owner/staff can still **Add member** themselves (now also with email, gender and address). A mobile number that is

@@ -4,6 +4,24 @@
 
 export type Plan = { id: string; name: string; days: number; price: number };
 
+/** Choice answers of the joining form (an option, or the person's own text for "Other"). */
+export type IntakeChoiceKey = "goal" | "experience" | "focus" | "workoutType" | "workoutTime" | "heardFrom" | "importantFactor";
+export type IntakeYesNoKey = "medical" | "medications" | "dietRestrictions" | "personalTraining" | "dietHelp";
+
+/**
+ * Answers to the joining form (members.intake). All optional in the type: old members and members
+ * added in the app may have none. Questions and validation: src/lib/intake.ts.
+ * planId/planName/startDate/payment are what a registered person chose (used to prefill activation).
+ */
+export type Intake = Partial<Record<IntakeChoiceKey, string> & Record<IntakeYesNoKey, boolean>> & {
+  weight?: number;
+  comments?: string;
+  planId?: string;
+  planName?: string;
+  startDate?: string;
+  payment?: string;
+};
+
 export type Member = {
   id: string;
   code: string;
@@ -28,6 +46,9 @@ export type Member = {
   source: "staff" | "form";
   /** No membership yet (registered through the form, not activated). */
   pending: boolean;
+  intake: Intake;
+  /** File in the private member-documents bucket ("" = none). Only the owner can open it. */
+  aadhaarPath: string;
 };
 
 export type Payment = {
@@ -76,9 +97,6 @@ export type AppData = {
 export const avatarColors = ["mint", "blue", "amber", "violet", "rose"];
 
 export const paymentMethods = ["UPI", "Cash", "Card", "Bank transfer"];
-
-/** "" = not given. Same list as the database check. */
-export const genders = ["Male", "Female", "Other"];
 
 export const expenseCategories = ["Rent", "Salaries", "Electricity & water", "Equipment", "Maintenance & cleaning", "Marketing", "Other"];
 

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Icon } from "../components/Icon";
+import { IntakeCard } from "../components/IntakeCard";
 import { MemberAttendance } from "../components/MemberAttendance";
 import { MemberValueChart } from "../components/MemberValueChart";
 import { PageHeader } from "../components/PageHeader";
@@ -55,6 +56,7 @@ export function MemberProfile({ memberId, setScreen, backTo }: { memberId: strin
       <aside className="profile-side">
         {membershipCard}
         <section className="panel detail-card"><div className="panel-head"><h2>Personal details</h2>{member.source === "form" && <Badge>Registration form</Badge>}</div><dl><div><dt>Emergency contact</dt><dd>{member.emergency ? (/^\d{10}$/.test(member.emergency) ? `+91 ${formatPhone(member.emergency)}` : member.emergency) : "—"}</dd></div><div><dt>Date of birth</dt><dd>{member.dob ? formatDateLong(member.dob) : "—"}</dd></div><div><dt>Email</dt><dd>{member.email || "—"}</dd></div><div><dt>Gender</dt><dd>{member.gender || "—"}</dd></div><div><dt>Address</dt><dd>{member.address || "—"}</dd></div><div><dt>Notes</dt><dd>{member.notes || "—"}</dd></div></dl></section>
+        <IntakeCard member={member}/>
       </aside>
     </div>
   </div>;

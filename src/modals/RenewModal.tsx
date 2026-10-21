@@ -11,11 +11,13 @@ import { useStore } from "../store/store";
 export function RenewModal({ memberId, onClose }: { memberId: string; onClose: () => void }) {
   const { data, today, reload } = useStore();
   const member = data.members.find((m) => m.id === memberId);
-  const initialPlan = data.plans.find((p) => p.name === member?.plan) ?? data.plans[0];
+  // A registration is activated with what the person chose on the form (plan, start date, payment method).
+  const chosen = member?.pending ? member.intake : {};
+  const initialPlan = data.plans.find((p) => p.id === chosen.planId) ?? data.plans.find((p) => p.name === member?.plan) ?? data.plans[0];
   const [planId, setPlanId] = useState(initialPlan?.id ?? "");
-  const [startDate, setStartDate] = useState(member && member.expiryDate >= today ? addDays(member.expiryDate, 1) : today);
+  const [startDate, setStartDate] = useState(chosen.startDate && chosen.startDate >= today ? chosen.startDate : member && member.expiryDate >= today ? addDays(member.expiryDate, 1) : today);
   const [paid, setPaid] = useState(initialPlan ? String(initialPlan.price) : "");
-  const [method, setMethod] = useState("UPI");
+  const [method, setMethod] = useState(chosen.payment === "Cash" ? "Cash" : "UPI");
   const [error, setError] = useState("");
   const [done, setDone] = useState<{ plan: string; expiry: string; payment: Payment | null } | null>(null);
   const [saving, setSaving] = useState(false);

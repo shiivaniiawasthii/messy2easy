@@ -4,7 +4,7 @@
 import { addDays, formatTime, toLocalDateTime, todayISO } from "../lib/format";
 import { supabase } from "../lib/supabase";
 import { fetchAppRows, toAppData } from "./appData";
-import { ATTENDANCE_DAYS_LOADED, avatarColors, type AppData } from "./types";
+import { ATTENDANCE_DAYS_LOADED, avatarColors, type AppData, type Intake } from "./types";
 
 const local = (timestamp: string) => toLocalDateTime(new Date(timestamp));
 
@@ -30,7 +30,7 @@ function fail(error: { message?: string; code?: string; details?: string } | nul
 const toTimestamp = (date: string, time = "12:00:00") => new Date(`${date}T${time}`).toISOString();
 
 export const db = {
-  async addMember(input: { name: string; phone: string; joined: string; emergency: string; dob: string; notes: string; email: string; gender: string; address: string; planId: string | null; customDays?: number; customPrice?: number }) {
+  async addMember(input: { name: string; phone: string; joined: string; emergency: string; dob: string; notes: string; email: string; gender: string; address: string; intake: Intake; planId: string | null; customDays?: number; customPrice?: number }) {
     const { data, error } = await supabase.rpc("create_member", {
       p_name: input.name,
       p_phone: input.phone,
@@ -45,14 +45,22 @@ export const db = {
       p_email: input.email,
       p_gender: input.gender,
       p_address: input.address,
+      p_intake: input.intake,
     });
     if (error) fail(error);
     return data as string;
   },
 
-  async updateMember(id: string, input: { name: string; phone: string; joined: string; emergency: string; dob: string; notes: string; suspended: boolean; email: string; gender: string; address: string }) {
-    const { error } = await supabase.from("members").update({ name: input.name, phone: input.phone, joined_on: input.joined, emergency_contact: input.emergency, date_of_birth: input.dob || null, notes: input.notes, suspended: input.suspended, email: input.email, gender: input.gender, address: input.address }).eq("id", id);
+  async updateMember(id: string, input: { name: string; phone: string; joined: string; emergency: string; dob: string; notes: string; suspended: boolean; email: string; gender: string; address: string; intake: Intake }) {
+    const { error } = await supabase.from("members").update({ name: input.name, phone: input.phone, joined_on: input.joined, emergency_contact: input.emergency, date_of_birth: input.dob || null, notes: input.notes, suspended: input.suspended, email: input.email, gender: input.gender, address: input.address, intake: input.intake }).eq("id", id);
     if (error) fail(error);
+  },
+
+  /** Owner only: a link to the member's Aadhaar copy that works for one minute. */
+  async aadhaarUrl(path: string) {
+    const { data, error } = await supabase.storage.from("member-documents").createSignedUrl(path, 60);
+    if (error || !data) throw new Error("Couldn't open the Aadhaar file. Only the gym owner can see it.");
+    return data.signedUrl;
   },
 
   /** Owner: turns the public registration link on (always a new link; the old one stops working) or off. */

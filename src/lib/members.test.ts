@@ -10,7 +10,7 @@ const TODAY = "2026-10-20";
 const memberRow = (over: Partial<AppRows["members"][number]> = {}): AppRows["members"][number] => ({
   id: "m1", code: "M-0001", name: "Rahul Kumar", phone: "9876543210", color: "mint", joined_on: "2026-10-18",
   plan: null, plan_days: null, plan_price: null, start_date: null, expiry_date: null, balance: 0,
-  suspended: false, emergency_contact: "", date_of_birth: null, notes: "", email: "", gender: "", address: "", source: "form", ...over,
+  suspended: false, emergency_contact: "", date_of_birth: null, notes: "", email: "", gender: "", address: "", source: "form", intake: {}, aadhaar_path: "", ...over,
 });
 const rows = (members: AppRows["members"]): AppRows => ({ gym: null, plans: [], members, memberships: [], payments: [], attendance: [], expenses: [], team: [] });
 
