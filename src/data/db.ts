@@ -4,7 +4,7 @@
 import { addDays, formatTime, toLocalDateTime, todayISO } from "../lib/format";
 import { supabase } from "../lib/supabase";
 import { fetchAppRows, toAppData } from "./appData";
-import { ATTENDANCE_DAYS_LOADED, avatarColors, type AppData } from "./types";
+import { ATTENDANCE_DAYS_LOADED, avatarColors, type AppData, type Intake } from "./types";
 
 const local = (timestamp: string) => toLocalDateTime(new Date(timestamp));
 
@@ -19,6 +19,7 @@ function fail(error: { message?: string; code?: string; details?: string } | nul
   const msg = error?.message ?? "";
   // create_member names the member who already has this number (also one who registered moments ago).
   if (msg === "duplicate_phone") throw new Error(`This mobile number already belongs to ${error?.details || "another member"}.`);
+  if (msg === "aadhaar_not_verified") throw new Error("The owner has to check this member’s Aadhaar first (profile → Aadhaar valid).");
   if (error?.code === "23505" && msg.includes("phone")) throw new Error("This mobile number already belongs to another member.");
   if (error?.code === "23505" && msg.includes("plans")) throw new Error("A plan with this name already exists.");
   if (error?.code === "42501" || msg.includes("row-level security")) throw new Error("You don't have permission to do this.");
@@ -30,7 +31,7 @@ function fail(error: { message?: string; code?: string; details?: string } | nul
 const toTimestamp = (date: string, time = "12:00:00") => new Date(`${date}T${time}`).toISOString();
 
 export const db = {
-  async addMember(input: { name: string; phone: string; joined: string; emergency: string; dob: string; notes: string; email: string; gender: string; address: string; planId: string | null; customDays?: number; customPrice?: number }) {
+  async addMember(input: { name: string; phone: string; joined: string; emergency: string; dob: string; notes: string; email: string; gender: string; address: string; intake: Intake; planId: string | null; customDays?: number; customPrice?: number }) {
     const { data, error } = await supabase.rpc("create_member", {
       p_name: input.name,
       p_phone: input.phone,
@@ -45,14 +46,40 @@ export const db = {
       p_email: input.email,
       p_gender: input.gender,
       p_address: input.address,
+      p_intake: input.intake,
     });
     if (error) fail(error);
     return data as string;
   },
 
-  async updateMember(id: string, input: { name: string; phone: string; joined: string; emergency: string; dob: string; notes: string; suspended: boolean; email: string; gender: string; address: string }) {
-    const { error } = await supabase.from("members").update({ name: input.name, phone: input.phone, joined_on: input.joined, emergency_contact: input.emergency, date_of_birth: input.dob || null, notes: input.notes, suspended: input.suspended, email: input.email, gender: input.gender, address: input.address }).eq("id", id);
+  async updateMember(id: string, input: { name: string; phone: string; joined: string; emergency: string; dob: string; notes: string; suspended: boolean; email: string; gender: string; address: string; intake: Intake }) {
+    const { error } = await supabase.from("members").update({ name: input.name, phone: input.phone, joined_on: input.joined, emergency_contact: input.emergency, date_of_birth: input.dob || null, notes: input.notes, suspended: input.suspended, email: input.email, gender: input.gender, address: input.address, intake: input.intake }).eq("id", id);
     if (error) fail(error);
+  },
+
+  /**
+   * Owner only: mark a registration's Aadhaar valid or wrong. "Valid" also starts the membership when
+   * it is due. Result: "activated", "scheduled" (starts by itself on the chosen date), "needs_plan"
+   * (pick a plan in Activate), "rejected", "already_started" or "not_verified".
+   */
+  async checkAadhaar(memberId: string, valid: boolean) {
+    const { data, error } = await supabase.rpc("set_aadhaar_check", { p_member_id: memberId, p_valid: valid });
+    if (error) fail(error);
+    return data as string;
+  },
+
+  /** Starts a verified registration with the duration, start date and method the person chose, at this fee. */
+  async startRegistration(input: { memberId: string; fee: number; paid: number; method: string }) {
+    const { error } = await supabase.rpc("start_registration", { p_member_id: input.memberId, p_fee: input.fee, p_paid: input.paid, p_method: input.method });
+    if (error?.message === "already_started") throw new Error("This membership has already been started.");
+    if (error) fail(error, error.message && !error.message.includes("fetch") ? error.message : undefined);
+  },
+
+  /** Owner only: a link to the member's Aadhaar copy that works for one minute. */
+  async aadhaarUrl(path: string) {
+    const { data, error } = await supabase.storage.from("member-documents").createSignedUrl(path, 60);
+    if (error || !data) throw new Error("Couldn't open the Aadhaar file. Only the gym owner can see it.");
+    return data.signedUrl;
   },
 
   /** Owner: turns the public registration link on (always a new link; the old one stops working) or off. */
@@ -70,6 +97,12 @@ export const db = {
 
   async renew(input: { memberId: string; planId: string; startDate: string; paid: number; method: string }) {
     const { error } = await supabase.rpc("renew_membership", { p_member_id: input.memberId, p_plan_id: input.planId, p_start_date: input.startDate, p_paid_amount: input.paid, p_method: input.method });
+    if (error) fail(error);
+  },
+
+  /** Renew for 1/3/6/12 months at a fee (when the gym has no plans on the Plans page). */
+  async renewDuration(input: { memberId: string; months: number; fee: number; startDate: string; paid: number; method: string }) {
+    const { error } = await supabase.rpc("renew_with_duration", { p_member_id: input.memberId, p_months: input.months, p_fee: input.fee, p_start_date: input.startDate, p_paid_amount: input.paid, p_method: input.method });
     if (error) fail(error);
   },
 

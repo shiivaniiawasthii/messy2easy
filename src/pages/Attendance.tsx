@@ -9,7 +9,7 @@ import { SearchBox } from "../components/SearchBox";
 import { Avatar, Badge, Button } from "../components/ui";
 import { ATTENDANCE_DAYS_LOADED } from "../data/types";
 import { addDays, digitsOnly, formatDate, formatDayTime, formatMoney, formatPhone, formatTime, initialsOf, MONTHS_LONG, parseDate, parseDateTime, toISODate } from "../lib/format";
-import { memberStatus, plural, statusTone } from "../lib/members";
+import { memberStatus, needsAadhaarCheck, plural, statusTone } from "../lib/members";
 import { useStore } from "../store/store";
 
 export function Attendance() {
@@ -56,7 +56,7 @@ export function Attendance() {
           {doneToday && <div className="already-in"><Icon name="check" size={18}/><span><strong>Already checked in today at {formatTime(doneToday.at)}</strong><small>Marked by {doneToday.by || "unknown"} · only one check-in per day</small></span></div>}
           {status === "Active" && !doneToday && <><Button icon="check" onClick={confirm} disabled={saving}>{saving ? "Checking in…" : "Confirm check-in"}</Button>{checkError && <p className="form-error">{checkError}</p>}</>}
           {status === "Expired" && <Button icon="refresh" onClick={() => openRenew(result.id)}>Membership expired · Renew</Button>}
-          {status === "Pending" && <Button icon="check" onClick={() => openRenew(result.id)}>New registration · Activate membership</Button>}
+          {status === "Pending" && (needsAadhaarCheck(result) ? <Button disabled>New registration · waiting for the owner’s Aadhaar check</Button> : <Button icon="check" onClick={() => openRenew(result.id)}>New registration · Activate membership</Button>)}
           {status === "Suspended" && <Button disabled>Membership suspended</Button>}
           {matches.length > 1 && <div className="expiry-list">{matches.filter((m) => m.id !== result.id).map((m) => <button className="expiry-row" key={m.id} onClick={() => setSelectedId(m.id)}><Avatar initials={initialsOf(m.name)} color={m.color} small/><span><strong>{m.name}</strong><small>{formatPhone(m.phone)}</small></span><div><strong>Select</strong></div></button>)}</div>}
         </div>}

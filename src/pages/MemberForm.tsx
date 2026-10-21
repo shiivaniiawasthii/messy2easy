@@ -3,10 +3,11 @@ import { useState } from "react";
 import { Icon } from "../components/Icon";
 import { PageHeader } from "../components/PageHeader";
 import { Button } from "../components/ui";
-import { genders, type Member } from "../data/types";
+import { IntakeFields } from "../components/IntakeFields";
+import { type Intake, type Member } from "../data/types";
 import { formatDate, formatMoney, formatPhone, isValidIndianMobile, parseMoney } from "../lib/format";
+import { checkIntake, cleanPhone, GENDERS, isValidEmail } from "../lib/intake";
 import { durationLabel } from "../lib/members";
-import { cleanPhone, isValidEmail } from "../lib/registration";
 import { type Screen } from "../navigation";
 import { useStore } from "../store/store";
 
@@ -23,6 +24,8 @@ export function MemberForm({ editingId, setScreen }: { editingId: string | null;
   const [email, setEmail] = useState(editing?.email ?? "");
   const [gender, setGender] = useState(editing?.gender ?? "");
   const [address, setAddress] = useState(editing?.address ?? "");
+  const [intake, setIntake] = useState<Intake>(editing?.intake ?? {});
+  const [weight, setWeight] = useState(editing?.intake.weight !== undefined ? String(editing.intake.weight) : "");
   const [suspended, setSuspended] = useState(editing?.suspended ?? false);
   const [planId, setPlanId] = useState(defaultPlan?.id ?? "custom");
   const [customDays, setCustomDays] = useState("30");
@@ -50,11 +53,16 @@ export function MemberForm({ editingId, setScreen }: { editingId: string | null;
     if (!joined) return fail("Choose a joining date.");
     if (mail && !isValidEmail(mail)) return fail("Enter a valid email address, or leave it empty.");
     if (address.trim().length > 200) return fail("Address is too long. Keep it under 200 characters.");
+    const answers = checkIntake({ ...intake, weight: weight.trim() === "" ? undefined : Number(weight) }, false);
+    if (!answers.ok) return fail(answers.error);
+    // Keep what a registered person chose when joining (plan, start date, payment); it isn't edited here.
+    const { planId, planMonths, planName, startDate, payment } = editing?.intake ?? {};
+    const savedIntake: Intake = JSON.parse(JSON.stringify({ planId, planMonths, planName, startDate, payment, ...answers.value }));
     setDuplicate(null);
     if (editing) {
       setSaving(true);
       try {
-        await db.updateMember(editing.id, { name: trimmed, phone: digits, joined, emergency: emergency.trim(), dob, notes: notes.trim(), suspended, email: mail, gender, address: address.trim() });
+        await db.updateMember(editing.id, { name: trimmed, phone: digits, joined, emergency: emergency.trim(), dob, notes: notes.trim(), suspended, email: mail, gender, address: address.trim(), intake: savedIntake });
         await reload();
         viewMember(editing.id);
       } catch (err) {
@@ -70,7 +78,7 @@ export function MemberForm({ editingId, setScreen }: { editingId: string | null;
     if (!Number.isInteger(price) || price < 0) return fail("Enter the custom price in whole rupees.");
     setSaving(true);
     try {
-      const id = await db.addMember({ name: trimmed, phone: digits, joined, emergency: emergency.trim(), dob, notes: notes.trim(), email: mail, gender, address: address.trim(), planId: plan ? plan.id : null, customDays: days, customPrice: price });
+      const id = await db.addMember({ name: trimmed, phone: digits, joined, emergency: emergency.trim(), dob, notes: notes.trim(), email: mail, gender, address: address.trim(), intake: savedIntake, planId: plan ? plan.id : null, customDays: days, customPrice: price });
       await reload();
       viewMember(id);
     } catch (err) {
@@ -82,7 +90,7 @@ export function MemberForm({ editingId, setScreen }: { editingId: string | null;
   };
   return <div className="page form-page"><button className="back-btn" onClick={back}><Icon name="arrow" size={17}/> {editing ? "Back to profile" : "Back to members"}</button><PageHeader title={editing ? `Edit ${editing.name}` : "Add new member"} subtitle={editing ? "Update contact details, notes and membership status." : "Create a profile and assign their first membership."}/>
     <form className="member-form" onSubmit={submit} noValidate><section className="panel form-section"><div className="section-number">1</div><div className="section-body"><h2>Personal details</h2><p>Basic contact information for the member.</p><div className="form-grid"><div className="field span-2"><label htmlFor="member-name">Full name <i>*</i></label><input id="member-name" required value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Rahul Kumar"/></div><div className="field"><label htmlFor="member-phone">Mobile number <i>*</i></label><div className="phone-input"><span>+91</span><input id="member-phone" required inputMode="numeric" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="98765 43210"/></div></div><div className="field"><label htmlFor="member-joined">Joining date <i>*</i></label><input id="member-joined" type="date" value={joined} onChange={(e) => setJoined(e.target.value)}/></div><div className="field"><label htmlFor="member-emergency">Emergency contact <small>Optional</small></label><input id="member-emergency" value={emergency} onChange={(e) => setEmergency(e.target.value)} placeholder="Name and mobile number"/></div><div className="field"><label htmlFor="member-dob">Date of birth <small>Optional</small></label><input id="member-dob" type="date" max={today} value={dob} onChange={(e) => setDob(e.target.value)}/></div>
-        <div className="field"><label htmlFor="member-email">Email <small>Optional</small></label><input id="member-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com"/></div><div className="field"><label htmlFor="member-gender">Gender <small>Optional</small></label><select id="member-gender" value={gender} onChange={(e) => setGender(e.target.value)}><option value="">Not given</option>{genders.map((g) => <option key={g}>{g}</option>)}</select></div><div className="field span-2"><label htmlFor="member-address">Address <small>Optional</small></label><input id="member-address" maxLength={200} value={address} onChange={(e) => setAddress(e.target.value)} placeholder="House, street, area"/></div>
+        <div className="field"><label htmlFor="member-email">Email <small>Optional</small></label><input id="member-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com"/></div><div className="field"><label htmlFor="member-gender">Gender <small>Optional</small></label><select id="member-gender" value={gender} onChange={(e) => setGender(e.target.value)}><option value="">Not given</option>{GENDERS.map((g) => <option key={g}>{g}</option>)}</select></div><div className="field span-2"><label htmlFor="member-address">Address <small>Optional</small></label><input id="member-address" maxLength={200} value={address} onChange={(e) => setAddress(e.target.value)} placeholder="House, street, area"/></div>
       </div></div></section>
       <section className="panel form-section"><div className="section-number">2</div><div className="section-body"><h2>Membership</h2>
         {editing ? <><p>{editing.pending ? "No membership yet. Use Activate membership on the profile to choose a plan." : `${editing.plan} plan, valid until ${formatDate(editing.expiryDate)}. Use Renew on the profile to change the plan.`}</p><div className="plan-options"><label className={`plan-option ${suspended ? "selected" : ""}`}><input type="checkbox" checked={suspended} onChange={(e) => setSuspended(e.target.checked)}/><span><strong>Suspend membership</strong><small>Blocks check-in until re-activated</small></span></label></div></>
@@ -90,7 +98,11 @@ export function MemberForm({ editingId, setScreen }: { editingId: string | null;
           {planId === "custom" && <div className="form-row"><div className="field"><label htmlFor="custom-days">Duration (days) <i>*</i></label><input id="custom-days" type="number" min={1} value={customDays} onChange={(e) => setCustomDays(e.target.value)}/></div><div className="field"><label htmlFor="custom-price">Price <i>*</i></label><div className="money-input"><span>₹</span><input id="custom-price" inputMode="numeric" value={customPrice} onChange={(e) => setCustomPrice(e.target.value)} placeholder="1500"/></div></div></div>}
           <small className="field-help">The plan price is added to the member’s balance. Record the payment from their profile.</small></>}
       </div></section>
-      <section className="panel form-section"><div className="section-number">3</div><div className="section-body"><h2>Notes</h2><p>Add anything the team should know.</p><div className="field"><textarea rows={4} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Fitness goals, preferences, or other useful notes..."/><small className="field-help">Only visible to gym staff.</small></div></div></section>
+      <section className="panel form-section"><div className="section-number">3</div><div className="section-body"><h2>Fitness & health</h2><p>Same questions as the registration form. Optional here; fill in what you know.</p>
+        <div className="field"><label htmlFor="member-weight">Current weight <small>Optional</small></label><div className="money-input unit-input"><input id="member-weight" inputMode="decimal" value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="e.g. 70"/><span>kg</span></div></div>
+        <IntakeFields value={intake} onChange={(p) => setIntake((v) => ({ ...v, ...p }))} required={false} idPrefix="member" sectionClass="intake-subhead"/>
+      </div></section>
+      <section className="panel form-section"><div className="section-number">4</div><div className="section-body"><h2>Notes</h2><p>Add anything the team should know.</p><div className="field"><textarea rows={4} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Fitness goals, preferences, or other useful notes..."/><small className="field-help">Only visible to gym staff.</small></div></div></section>
       {error && <div className="form-error duplicate-error" role="alert"><span>{error}</span>{duplicate && <Button variant="secondary" icon={duplicate.pending ? "check" : "users"} onClick={() => viewMember(duplicate.id)}>{duplicate.pending ? "Open profile to activate" : `Open ${duplicate.name.split(" ")[0]}’s profile`}</Button>}</div>}
       <div className="form-footer"><span><Icon name="shield" size={18}/> Information is saved securely and synced for all staff.</span><div><Button variant="ghost" onClick={back}>Cancel</Button><Button type="submit" disabled={saving}>{saving ? "Saving…" : editing ? "Save changes" : "Save member"}</Button></div></div></form>
   </div>;

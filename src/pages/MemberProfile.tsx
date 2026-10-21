@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { Icon } from "../components/Icon";
+import { AadhaarCheck } from "../components/AadhaarCheck";
+import { IntakeCard } from "../components/IntakeCard";
 import { MemberAttendance } from "../components/MemberAttendance";
 import { MemberValueChart } from "../components/MemberValueChart";
 import { PageHeader } from "../components/PageHeader";
 import { Avatar, Badge, Button } from "../components/ui";
 import { addDays, diffDays, digitsOnly, formatDate, formatDateLong, formatMoney, formatPhone, formatShortDateTime, initialsOf } from "../lib/format";
-import { memberRank, memberStatus, paymentTone, plural, statusTone } from "../lib/members";
+import { memberRank, memberStatus, needsAadhaarCheck, paymentTone, plural, statusTone } from "../lib/members";
 import { backLabels, type Screen } from "../navigation";
 import { useStore } from "../store/store";
 
@@ -35,7 +37,9 @@ export function MemberProfile({ memberId, setScreen, backTo }: { memberId: strin
   const expiryText = member.pending ? "No membership yet" : days < 0 ? `Expired ${plural(-days, "day")} ago` : days === 0 ? "Expires today" : `${plural(days, "day")} left`;
   const expiryTone = member.pending ? "amber-text" : days < 0 ? "danger-text" : days <= 7 ? "amber-text" : "green-text";
   const membershipCard = member.pending
-    ? <section className="panel detail-card side-card"><div className="panel-head"><h2>Membership</h2><Badge tone={statusTone(status)}>{status}</Badge></div><p className={`side-status ${expiryTone}`}>{expiryText}</p><p className="field-help">Registered through the gym’s form on {formatDateLong(member.joined)}. Choose a plan and record the payment to start the membership.</p><Button icon="check" onClick={() => openRenew(member.id)}>Activate membership</Button></section>
+    ? <section className="panel detail-card side-card"><div className="panel-head"><h2>Membership</h2><Badge tone={statusTone(status)}>{status}</Badge></div><p className={`side-status ${expiryTone}`}>{expiryText}</p><p className="field-help">{member.source === "form" ? `Registered through the gym’s form on ${formatDateLong(member.joined)}${member.intake.planName ? ` · wants the ${member.intake.planName} plan` : ""}${member.intake.startDate ? ` from ${formatDateLong(member.intake.startDate)}` : ""}.` : "No membership yet."}</p>
+      {needsAadhaarCheck(member) ? <AadhaarCheck member={member}/>
+        : <>{member.source === "form" && <p className="field-help">Aadhaar verified. Enter the fee to start the membership; the plan, start date and payment method come from the form.</p>}<Button icon="check" onClick={() => openRenew(member.id)}>{member.source === "form" ? "Enter fee & start" : "Activate membership"}</Button></>}</section>
     : <section className="panel detail-card side-card"><div className="panel-head"><h2>Membership</h2><Badge tone={statusTone(status)}>{status}</Badge></div><p className={`side-status ${expiryTone}`}>{expiryText}</p><div className="side-progress"><i style={{width: `${progress}%`}}/></div><dl><div><dt>Plan</dt><dd>{member.plan} · {formatMoney(member.planPrice)}</dd></div><div><dt>Started</dt><dd>{formatDateLong(member.startDate)}</dd></div><div><dt>Expires</dt><dd>{formatDateLong(member.expiryDate)}</dd></div></dl><Button variant={days <= 7 ? "primary" : "secondary"} icon="refresh" onClick={() => openRenew(member.id)}>Renew membership</Button></section>;
   return <div className="page profile-page">{backButton}
     <section className="profile-hero"><div className="profile-main"><Avatar initials={initialsOf(member.name)} color={member.color}/><div><div className="profile-name"><h1>{member.name}</h1><Badge tone={statusTone(status)}>{status}</Badge></div><p>{member.code} · {member.pending ? "Registered" : "Member since"} {formatDateLong(member.joined)}</p><div className="contact-line"><span><Icon name="phone" size={16}/> +91 {formatPhone(member.phone)}</span></div></div></div><div className="profile-actions"><a className="btn btn-secondary contact-btn" href={`tel:+91${digitsOnly(member.phone)}`} aria-label={`Call ${member.name}`} title="Call"><Icon name="phone" size={18}/><span>Call</span></a><a className="btn btn-secondary contact-btn" href={`https://wa.me/91${digitsOnly(member.phone)}`} target="_blank" rel="noopener noreferrer" aria-label={`WhatsApp ${member.name}`} title="WhatsApp"><Icon name="message" size={18}/><span>WhatsApp</span></a><Button variant="secondary" icon="edit" onClick={() => editMember(member.id)}>Edit</Button><Button icon="plus" onClick={() => openPayment(member.id)}>Record payment</Button></div></section>
@@ -55,6 +59,7 @@ export function MemberProfile({ memberId, setScreen, backTo }: { memberId: strin
       <aside className="profile-side">
         {membershipCard}
         <section className="panel detail-card"><div className="panel-head"><h2>Personal details</h2>{member.source === "form" && <Badge>Registration form</Badge>}</div><dl><div><dt>Emergency contact</dt><dd>{member.emergency ? (/^\d{10}$/.test(member.emergency) ? `+91 ${formatPhone(member.emergency)}` : member.emergency) : "—"}</dd></div><div><dt>Date of birth</dt><dd>{member.dob ? formatDateLong(member.dob) : "—"}</dd></div><div><dt>Email</dt><dd>{member.email || "—"}</dd></div><div><dt>Gender</dt><dd>{member.gender || "—"}</dd></div><div><dt>Address</dt><dd>{member.address || "—"}</dd></div><div><dt>Notes</dt><dd>{member.notes || "—"}</dd></div></dl></section>
+        <IntakeCard member={member}/>
       </aside>
     </div>
   </div>;

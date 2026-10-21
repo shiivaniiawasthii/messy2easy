@@ -8,8 +8,9 @@ import { StatCard } from "../components/StatCard";
 import { Avatar, Badge, Button } from "../components/ui";
 import { type Member, type Renewal } from "../data/types";
 import { addDays, DAYS_LONG, diffDays, formatDate, formatMoney, formatPhone, formatShortMoney, initialsOf, MONTHS, MONTHS_LONG, parseDate, parseDateTime, relativeTime } from "../lib/format";
+import { MemberInsightsPanel } from "../components/MemberInsightsPanel";
 import { RegistrationPanel } from "../components/RegistrationPanel";
-import { expiredWithin, expiringWithin, firstMembershipIds, lastVisits, memberStatus, membersWithDues, plural, stoppedComing } from "../lib/members";
+import { expiredWithin, expiringWithin, firstMembershipIds, lastVisits, memberStatus, membersWithDues, needsAadhaarCheck, plural, stoppedComing } from "../lib/members";
 import { type Bucket, collectionBuckets, type DateRange, hourLabel, inRange, type Period, periodRanges, PERIODS, shortHour, WEEKDAYS } from "../lib/periods";
 import { type Screen } from "../navigation";
 import { useStore } from "../store/store";
@@ -60,9 +61,12 @@ export function Dashboard({ setScreen }: { setScreen: (s: Screen) => void }) {
     { id: "dues", icon: "wallet", tone: "blue", title: `${plural(withDues.length, "member")} with pending dues`, detail: "Collect at their next visit", value: formatMoney(withDues.reduce((s, m) => s + m.balance, 0)), onClick: () => openPaymentsTab("Unpaid") },
     { id: "inactive", icon: "users", tone: "violet", title: `${plural(inactive.length, "member")} stopped coming`, detail: "Active plan, but no visit in 14+ days", value: String(inactive.length), onClick: () => setShowInactive(true) },
   ];
-  // People who registered through the form link and are waiting for a plan.
+  // People who registered through the form link: first the owner checks the Aadhaar, then they start.
   const pending = data.members.filter((m) => memberStatus(m, today) === "Pending");
-  if (pending.length > 0) focus.unshift({ id: "pending", icon: "check", tone: "amber", title: `${plural(pending.length, "new registration")} to activate`, detail: "Registered with the form link · choose a plan and take payment", value: String(pending.length), onClick: () => openMembers({ status: "Pending" }) });
+  const toCheck = pending.filter(needsAadhaarCheck).length;
+  const toStart = pending.length - toCheck;
+  if (toStart > 0) focus.unshift({ id: "pending", icon: "check", tone: "amber", title: `${plural(toStart, "new member")} to activate`, detail: "Aadhaar checked · enter the fee to start their membership", value: String(toStart), onClick: () => openMembers({ status: "Pending" }) });
+  if (toCheck > 0) focus.unshift({ id: "aadhaar", icon: "shield", tone: "rose", title: `${plural(toCheck, "Aadhaar")} to check`, detail: isOwner ? "New registrations · mark the Aadhaar valid to start them" : "New registrations · the owner checks the Aadhaar", value: String(toCheck), onClick: () => openMembers({ status: "Pending" }) });
 
   // When members come: use the period, or the last 30 days if there is too little data yet.
   let visitRange = current;
@@ -142,6 +146,7 @@ export function Dashboard({ setScreen }: { setScreen: (s: Screen) => void }) {
         </div>
       </div>
     </section>
+    <MemberInsightsPanel/>
     {isOwner && <RegistrationPanel/>}
     {showInactive && <InactiveMembersModal members={inactive} lastVisit={lastVisit} onClose={() => setShowInactive(false)}/>}
   </div>;

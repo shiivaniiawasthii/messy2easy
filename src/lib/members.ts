@@ -13,6 +13,9 @@ export function memberStatus(m: Member, today: string): MemberStatus {
   return m.expiryDate < today ? "Expired" : "Active";
 }
 
+/** A form registration whose Aadhaar the owner hasn't marked valid yet: it can't start until then. */
+export const needsAadhaarCheck = (m: Member) => m.pending && m.source === "form" && m.aadhaarStatus !== "verified";
+
 /** Ids of each member's first membership (joining). The others are renewals. */
 export function firstMembershipIds(renewals: Renewal[]) {
   const first = new Map<string, Renewal>();

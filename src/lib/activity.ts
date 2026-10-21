@@ -34,7 +34,14 @@ export function describeActivity(a: ActivityRow): { text: string; icon: IconName
   switch (a.action) {
     case "member_added": return { text: `added new member ${m}`, icon: "users", kind: "members", warn: false };
     // Logged with the person's own name as the actor ("Rahul registered …").
-    case "member_registered": return { text: "registered through the gym’s form link", icon: "users", kind: "members", warn: false };
+    case "member_registered": return { text: "registered through the gym’s form link. Check their Aadhaar to start the membership", icon: "users", kind: "members", warn: false };
+    case "aadhaar_verified": return { text: `marked ${m}’s Aadhaar as valid`, icon: "shield", kind: "members", warn: false };
+    case "aadhaar_rejected": return { text: `marked ${m}’s Aadhaar as the wrong document`, icon: "close", kind: "members", warn: true };
+    // Reminder on the start date the person chose (actor "Gym app"); detail = Aadhaar status then.
+    case "start_date_reached": return { text: a.detail === "verified" ? `reminds you: ${m} wanted to start today. Enter the fee on their profile to start the membership` : `reminds you: ${m} wanted to start today. Check their Aadhaar first`, icon: "clock", kind: "members", warn: true };
+    // Older entries (memberships were started automatically before the fee was entered by the owner).
+    case "membership_auto_activated": return { text: `started ${m}’s membership on ${a.detail || "a"} plan (${money(a.amount)}). Payment is due, collect it at the desk`, icon: "check", kind: "money", warn: false };
+    case "activation_needed": return { text: `couldn’t start ${m}’s membership: no matching plan${a.detail ? ` for ${a.detail}` : ""}. Activate it from their profile`, icon: "clock", kind: "members", warn: true };
     case "membership_activated": return { text: `activated ${m}’s membership on ${a.detail || "a"} plan (${money(a.amount)})`, icon: "check", kind: "money", warn: false };
     case "member_updated": return { text: `updated ${m}’s details`, icon: "edit", kind: "members", warn: false };
     case "member_suspended": return { text: `suspended ${m}’s membership`, icon: "close", kind: "members", warn: true };

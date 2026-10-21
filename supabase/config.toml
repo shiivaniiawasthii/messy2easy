@@ -418,3 +418,8 @@ enabled = true
 # and by owners with their login token. It checks both itself.
 [functions.notifications]
 verify_jwt = false
+
+# Public member registration (the gym's form link): visitors have no login token.
+# The function checks the link, the answers and the Aadhaar file itself.
+[functions.register]
+verify_jwt = false
