@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { Icon } from "../components/Icon";
+import { AadhaarCheck } from "../components/AadhaarCheck";
 import { IntakeCard } from "../components/IntakeCard";
 import { MemberAttendance } from "../components/MemberAttendance";
 import { MemberValueChart } from "../components/MemberValueChart";
 import { PageHeader } from "../components/PageHeader";
 import { Avatar, Badge, Button } from "../components/ui";
 import { addDays, diffDays, digitsOnly, formatDate, formatDateLong, formatMoney, formatPhone, formatShortDateTime, initialsOf } from "../lib/format";
-import { memberRank, memberStatus, paymentTone, plural, statusTone } from "../lib/members";
+import { memberRank, memberStatus, needsAadhaarCheck, paymentTone, plural, statusTone } from "../lib/members";
 import { backLabels, type Screen } from "../navigation";
 import { useStore } from "../store/store";
 
@@ -36,7 +37,9 @@ export function MemberProfile({ memberId, setScreen, backTo }: { memberId: strin
   const expiryText = member.pending ? "No membership yet" : days < 0 ? `Expired ${plural(-days, "day")} ago` : days === 0 ? "Expires today" : `${plural(days, "day")} left`;
   const expiryTone = member.pending ? "amber-text" : days < 0 ? "danger-text" : days <= 7 ? "amber-text" : "green-text";
   const membershipCard = member.pending
-    ? <section className="panel detail-card side-card"><div className="panel-head"><h2>Membership</h2><Badge tone={statusTone(status)}>{status}</Badge></div><p className={`side-status ${expiryTone}`}>{expiryText}</p><p className="field-help">Registered through the gym’s form on {formatDateLong(member.joined)}.{member.intake.startDate ? ` It starts by itself on ${formatDateLong(member.intake.startDate)} with the ${member.intake.planName ?? "chosen"} plan (if the gym has a matching plan), and you get a notification. To start now, activate it.` : " Choose a plan and record the payment to start the membership."}</p><Button icon="check" onClick={() => openRenew(member.id)}>Activate membership</Button></section>
+    ? <section className="panel detail-card side-card"><div className="panel-head"><h2>Membership</h2><Badge tone={statusTone(status)}>{status}</Badge></div><p className={`side-status ${expiryTone}`}>{expiryText}</p><p className="field-help">{member.source === "form" ? `Registered through the gym’s form on ${formatDateLong(member.joined)}${member.intake.planName ? ` · wants the ${member.intake.planName} plan` : ""}${member.intake.startDate ? ` from ${formatDateLong(member.intake.startDate)}` : ""}.` : "No membership yet."}</p>
+      {needsAadhaarCheck(member) ? <AadhaarCheck member={member}/>
+        : <>{member.source === "form" && member.intake.startDate && member.intake.startDate > today && <p className="field-help">Aadhaar verified. The membership starts by itself on {formatDateLong(member.intake.startDate)}, or start it now.</p>}<Button icon="check" onClick={() => openRenew(member.id)}>Activate membership</Button></>}</section>
     : <section className="panel detail-card side-card"><div className="panel-head"><h2>Membership</h2><Badge tone={statusTone(status)}>{status}</Badge></div><p className={`side-status ${expiryTone}`}>{expiryText}</p><div className="side-progress"><i style={{width: `${progress}%`}}/></div><dl><div><dt>Plan</dt><dd>{member.plan} · {formatMoney(member.planPrice)}</dd></div><div><dt>Started</dt><dd>{formatDateLong(member.startDate)}</dd></div><div><dt>Expires</dt><dd>{formatDateLong(member.expiryDate)}</dd></div></dl><Button variant={days <= 7 ? "primary" : "secondary"} icon="refresh" onClick={() => openRenew(member.id)}>Renew membership</Button></section>;
   return <div className="page profile-page">{backButton}
     <section className="profile-hero"><div className="profile-main"><Avatar initials={initialsOf(member.name)} color={member.color}/><div><div className="profile-name"><h1>{member.name}</h1><Badge tone={statusTone(status)}>{status}</Badge></div><p>{member.code} · {member.pending ? "Registered" : "Member since"} {formatDateLong(member.joined)}</p><div className="contact-line"><span><Icon name="phone" size={16}/> +91 {formatPhone(member.phone)}</span></div></div></div><div className="profile-actions"><a className="btn btn-secondary contact-btn" href={`tel:+91${digitsOnly(member.phone)}`} aria-label={`Call ${member.name}`} title="Call"><Icon name="phone" size={18}/><span>Call</span></a><a className="btn btn-secondary contact-btn" href={`https://wa.me/91${digitsOnly(member.phone)}`} target="_blank" rel="noopener noreferrer" aria-label={`WhatsApp ${member.name}`} title="WhatsApp"><Icon name="message" size={18}/><span>WhatsApp</span></a><Button variant="secondary" icon="edit" onClick={() => editMember(member.id)}>Edit</Button><Button icon="plus" onClick={() => openPayment(member.id)}>Record payment</Button></div></section>

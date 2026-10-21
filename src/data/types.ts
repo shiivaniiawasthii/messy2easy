@@ -4,6 +4,8 @@
 
 export type Plan = { id: string; name: string; days: number; price: number };
 
+export type AadhaarStatus = "none" | "pending" | "verified" | "rejected";
+
 /** Choice answers of the joining form (an option, or the person's own text for "Other"). */
 export type IntakeChoiceKey = "goal" | "experience" | "focus" | "workoutType" | "workoutTime" | "heardFrom" | "importantFactor";
 export type IntakeYesNoKey = "medical" | "medications" | "dietRestrictions" | "personalTraining" | "dietHelp";
@@ -51,6 +53,8 @@ export type Member = {
   intake: Intake;
   /** File in the private member-documents bucket ("" = none). Only the owner can open it. */
   aadhaarPath: string;
+  /** Owner's check of the Aadhaar. A form registration can only start once it is "verified". */
+  aadhaarStatus: AadhaarStatus;
 };
 
 export type Payment = {

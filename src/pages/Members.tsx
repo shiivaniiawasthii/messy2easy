@@ -9,7 +9,7 @@ import { Avatar, Badge, Button } from "../components/ui";
 import { type Member } from "../data/types";
 import { diffDays, digitsOnly, formatDate, formatMoney, formatPhone, initialsOf } from "../lib/format";
 import { answerGroup, GOAL_FILTERS, HEARD_FILTERS, matchesNeed, memberNeeds, NEED_FILTERS, TIME_FILTERS } from "../lib/intake";
-import { isExpiringSoon, memberStatus, paymentState, paymentTone, statusTone } from "../lib/members";
+import { isExpiringSoon, memberStatus, needsAadhaarCheck, paymentState, paymentTone, statusTone } from "../lib/members";
 import { type Screen } from "../navigation";
 import { useStore } from "../store/store";
 
@@ -49,9 +49,16 @@ export function NeedTags({ member, max = 3 }: { member: Member; max?: number }) 
   return <span className="need-tags">{tags.slice(0, max).map((t) => <Badge key={t.label} tone={t.tone}>{t.label}</Badge>)}{tags.length > max && <Badge>+{tags.length - max}</Badge>}</span>;
 }
 
-/** Opens the activation (first membership) without also opening the member's profile. */
+/**
+ * Pending row action. A form registration first needs the owner's Aadhaar check (opens the profile,
+ * where the owner marks it); after that, Activate opens the first membership directly.
+ */
 function ActivateButton({ member }: { member: Member }) {
-  const { openRenew } = useStore();
+  const { openRenew, viewMember, account } = useStore();
+  if (needsAadhaarCheck(member)) {
+    if (account.role !== "owner") return <Badge tone="warning">Aadhaar check</Badge>;
+    return <button type="button" className="row-action check" onClick={(e) => { e.stopPropagation(); viewMember(member.id); }}>{member.aadhaarStatus === "rejected" ? "Wrong Aadhaar" : "Check Aadhaar"}</button>;
+  }
   return <button type="button" className="row-action" onClick={(e) => { e.stopPropagation(); openRenew(member.id); }}>Activate</button>;
 }
 

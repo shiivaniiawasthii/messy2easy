@@ -1,0 +1,85 @@
+import { useState } from "react";
+import { db } from "../data/db";
+import { type AadhaarStatus, type Member } from "../data/types";
+import { whatsappLink } from "../lib/accounts";
+import { formatDateLong } from "../lib/format";
+import { useStore } from "../store/store";
+import { useConfirm } from "./Confirm";
+import { Icon } from "./Icon";
+import { Badge, Button } from "./ui";
+
+export const AADHAAR_STATUS: Record<AadhaarStatus, [string, string]> = {
+  none: ["No Aadhaar uploaded", "neutral"],
+  pending: ["Aadhaar to check", "warning"],
+  verified: ["Aadhaar verified", "success"],
+  rejected: ["Wrong document", "danger"],
+};
+
+/** Opens the member's Aadhaar copy (owner only) in a new tab with a 1-minute link. */
+export function useAadhaarViewer(path: string) {
+  const [opening, setOpening] = useState(false);
+  const [error, setError] = useState("");
+  const open = async () => {
+    setError("");
+    setOpening(true);
+    // Opened before the await so phone browsers don't block it as a pop-up.
+    const tab = window.open("", "_blank");
+    try {
+      const url = await db.aadhaarUrl(path);
+      if (tab) tab.location.href = url; else window.location.href = url;
+    } catch (err) {
+      tab?.close();
+      setError((err as Error).message);
+    } finally {
+      setOpening(false);
+    }
+  };
+  return { open, opening, error };
+}
+
+/**
+ * Profile → Membership card of a registration waiting for the Aadhaar check.
+ * Owner: view the Aadhaar, mark it valid (starts the membership when due) or wrong (ask for the right one).
+ * Staff: told that the owner checks it.
+ */
+export function AadhaarCheck({ member }: { member: Member }) {
+  const { account, data, today, reload, openRenew } = useStore();
+  const confirm = useConfirm();
+  const viewer = useAadhaarViewer(member.aadhaarPath);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [label, tone] = AADHAAR_STATUS[member.aadhaarStatus];
+  if (account.role !== "owner") return <div className="aadhaar-check"><Badge tone={tone}>{label}</Badge><p className="field-help">The membership starts after the gym owner checks this member’s Aadhaar.</p></div>;
+
+  const start = member.intake.startDate;
+  const mark = async (valid: boolean) => {
+    const ok = valid
+      ? await confirm({ title: "Aadhaar is valid?", message: `Confirm that this is ${member.name}’s Aadhaar card and the details match. ${start ? `The membership then starts ${start <= today ? "now" : `on ${formatDateLong(start)}`}, and its price is added to their dues.` : "Then choose the plan."}`, confirmLabel: "Yes, valid", icon: "check" })
+      : await confirm({ title: "Wrong document?", message: "The membership stays on hold. Ask them for the right Aadhaar; you can mark it valid after checking the original at the desk.", confirmLabel: "Mark as wrong", danger: true, icon: "close" });
+    if (!ok) return;
+    setError("");
+    setSaving(true);
+    try {
+      const result = await db.checkAadhaar(member.id, valid);
+      await reload();
+      if (result === "needs_plan") openRenew(member.id); // no matching plan or no start date: the owner picks one
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  };
+  const askAgain = `Namaste ${member.name.split(" ")[0]} 🙏\n${data.gym.name} ke form me upload kiya gaya document sahi Aadhaar card nahi tha. Kripya gym aate waqt apna original Aadhaar card saath laayein, taaki aapki membership shuru ho sake.`;
+
+  return <div className="aadhaar-check">
+    <Badge tone={tone}>{label}</Badge>
+    <p className="field-help">{member.aadhaarStatus === "rejected" ? "Marked as the wrong document. Ask for the right Aadhaar, check the original at the desk, then mark it valid." : member.aadhaarPath ? "Open the Aadhaar and check the name, photo and date of birth before starting the membership." : "No file was uploaded. Check the original card at the desk."}</p>
+    <div className="aadhaar-actions">
+      {member.aadhaarPath && <Button variant="secondary" icon="shield" onClick={() => void viewer.open()} disabled={viewer.opening}>{viewer.opening ? "Opening…" : "View Aadhaar"}</Button>}
+      <Button icon="check" onClick={() => void mark(true)} disabled={saving}>{saving ? "Saving…" : "Aadhaar valid"}</Button>
+      {member.aadhaarStatus !== "rejected" && <Button variant="ghost" icon="close" onClick={() => void mark(false)} disabled={saving}>Wrong document</Button>}
+      {member.aadhaarStatus === "rejected" && <a className="btn btn-secondary" href={whatsappLink(member.phone, askAgain)} target="_blank" rel="noopener noreferrer"><Icon name="message" size={18}/><span>Ask on WhatsApp</span></a>}
+    </div>
+    {(error || viewer.error) && <p className="form-error">{error || viewer.error}</p>}
+  </div>;
+}

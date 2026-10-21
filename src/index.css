@@ -1319,3 +1319,14 @@ div.table-row[role="button"]:hover { background: #fafcfb; }
 div.needs-bar { cursor: default; }
 .needs-tiles strong em { font: 600 12px "Manrope"; font-style: normal; color: var(--muted); margin-left: 4px; }
 .plan-split-title small { color: var(--muted); font-weight: 400; }
+
+/* Aadhaar check (profile → Membership card of a new registration) */
+.aadhaar-check { display: grid; gap: 10px; }
+.aadhaar-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.aadhaar-actions .btn { flex: 1 1 140px; }
+.aadhaar-row > span .badge { margin-left: 4px; }
+.row-action.check { background: var(--warning); }
+.row-action.check:hover { background: #8a5208; }
+@media (max-width: 760px) {
+  .aadhaar-actions .btn { flex-basis: 100%; }
+}

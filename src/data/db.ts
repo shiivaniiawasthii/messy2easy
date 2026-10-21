@@ -19,6 +19,7 @@ function fail(error: { message?: string; code?: string; details?: string } | nul
   const msg = error?.message ?? "";
   // create_member names the member who already has this number (also one who registered moments ago).
   if (msg === "duplicate_phone") throw new Error(`This mobile number already belongs to ${error?.details || "another member"}.`);
+  if (msg === "aadhaar_not_verified") throw new Error("The owner has to check this member’s Aadhaar first (profile → Aadhaar valid).");
   if (error?.code === "23505" && msg.includes("phone")) throw new Error("This mobile number already belongs to another member.");
   if (error?.code === "23505" && msg.includes("plans")) throw new Error("A plan with this name already exists.");
   if (error?.code === "42501" || msg.includes("row-level security")) throw new Error("You don't have permission to do this.");
@@ -54,6 +55,17 @@ export const db = {
   async updateMember(id: string, input: { name: string; phone: string; joined: string; emergency: string; dob: string; notes: string; suspended: boolean; email: string; gender: string; address: string; intake: Intake }) {
     const { error } = await supabase.from("members").update({ name: input.name, phone: input.phone, joined_on: input.joined, emergency_contact: input.emergency, date_of_birth: input.dob || null, notes: input.notes, suspended: input.suspended, email: input.email, gender: input.gender, address: input.address, intake: input.intake }).eq("id", id);
     if (error) fail(error);
+  },
+
+  /**
+   * Owner only: mark a registration's Aadhaar valid or wrong. "Valid" also starts the membership when
+   * it is due. Result: "activated", "scheduled" (starts by itself on the chosen date), "needs_plan"
+   * (pick a plan in Activate), "rejected", "already_started" or "not_verified".
+   */
+  async checkAadhaar(memberId: string, valid: boolean) {
+    const { data, error } = await supabase.rpc("set_aadhaar_check", { p_member_id: memberId, p_valid: valid });
+    if (error) fail(error);
+    return data as string;
   },
 
   /** Owner only: a link to the member's Aadhaar copy that works for one minute. */

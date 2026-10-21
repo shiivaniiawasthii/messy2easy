@@ -25,7 +25,7 @@ async function fetchAll<T>(page: (from: number, to: number) => PromiseLike<Resul
 
 type GymRow = { name: string; address: string; phone: string; gstin: string; subscription_plan: string; subscription_ends_on: string | null; registration_token: string | null };
 type PlanRow = { id: string; name: string; days: number; price: number };
-type MemberRow = { id: string; code: string; name: string; phone: string; color: string; joined_on: string; plan: string | null; plan_days: number | null; plan_price: number | null; start_date: string | null; expiry_date: string | null; balance: number | null; suspended: boolean; emergency_contact: string; date_of_birth: string | null; notes: string; email: string; gender: string; address: string; source: string; intake: Intake | null; aadhaar_path: string };
+type MemberRow = { id: string; code: string; name: string; phone: string; color: string; joined_on: string; plan: string | null; plan_days: number | null; plan_price: number | null; start_date: string | null; expiry_date: string | null; balance: number | null; suspended: boolean; emergency_contact: string; date_of_birth: string | null; notes: string; email: string; gender: string; address: string; source: string; intake: Intake | null; aadhaar_path: string; aadhaar_status: string };
 type MembershipRow = { id: string; member_id: string; plan_name: string; price: number; start_date: string; end_date: string; created_at: string };
 type PaymentRow = { id: string; member_id: string; amount: number; method: string; paid_at: string; note: string; created_by: string | null; created_at: string };
 type AttendanceRow = { id: string; member_id: string; checked_in_at: string; created_by: string | null };
@@ -44,7 +44,7 @@ export async function fetchAppRows(client: Client, attendanceSince: string, gymI
   const [gym, plans, members, memberships, payments, attendance, expenses, team] = await Promise.all([
     forGym(client.from("gyms").select("name, address, phone, gstin, subscription_plan, subscription_ends_on, registration_token"), "id").maybeSingle(),
     forGym(client.from("plans").select("id, name, days, price").eq("active", true)).order("days"),
-    fetchAll<MemberRow>((a, b) => forGym(client.from("member_overview").select("id, code, name, phone, color, joined_on, plan, plan_days, plan_price, start_date, expiry_date, balance, suspended, emergency_contact, date_of_birth, notes, email, gender, address, source, intake, aadhaar_path")).order("created_at", { ascending: false }).range(a, b)),
+    fetchAll<MemberRow>((a, b) => forGym(client.from("member_overview").select("id, code, name, phone, color, joined_on, plan, plan_days, plan_price, start_date, expiry_date, balance, suspended, emergency_contact, date_of_birth, notes, email, gender, address, source, intake, aadhaar_path, aadhaar_status")).order("created_at", { ascending: false }).range(a, b)),
     fetchAll<MembershipRow>((a, b) => forGym(client.from("memberships").select("id, member_id, plan_name, price, start_date, end_date, created_at")).order("start_date").range(a, b)),
     fetchAll<PaymentRow>((a, b) => forGym(client.from("payments").select("id, member_id, amount, method, paid_at, note, created_by, created_at")).order("paid_at").range(a, b)),
     fetchAll<AttendanceRow>((a, b) => forGym(client.from("attendance").select("id, member_id, checked_in_at, created_by")).gte("checked_in_at", attendanceSince).order("checked_in_at").range(a, b)),
@@ -82,6 +82,7 @@ export function toAppData(rows: AppRows, local: (timestamp: string) => string): 
     pending: m.plan === null,
     intake: m.intake ?? {},
     aadhaarPath: m.aadhaar_path ?? "",
+    aadhaarStatus: (["pending", "verified", "rejected"].includes(m.aadhaar_status) ? m.aadhaar_status : "none") as Member["aadhaarStatus"],
   }));
   const nameOf = new Map(memberList.map((m) => [m.id, m.name]));
   const staffName = new Map(rows.team.map((s) => [s.user_id, s.name]));

@@ -4,13 +4,13 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { type AppRows, toAppData } from "../data/appData.ts";
 import { type Renewal } from "../data/types.ts";
-import { expiredWithin, firstMembershipIds, memberAlerts, memberStatus } from "./members.ts";
+import { expiredWithin, firstMembershipIds, memberAlerts, memberStatus, needsAadhaarCheck } from "./members.ts";
 
 const TODAY = "2026-10-20";
 const memberRow = (over: Partial<AppRows["members"][number]> = {}): AppRows["members"][number] => ({
   id: "m1", code: "M-0001", name: "Rahul Kumar", phone: "9876543210", color: "mint", joined_on: "2026-10-18",
   plan: null, plan_days: null, plan_price: null, start_date: null, expiry_date: null, balance: 0,
-  suspended: false, emergency_contact: "", date_of_birth: null, notes: "", email: "", gender: "", address: "", source: "form", intake: {}, aadhaar_path: "", ...over,
+  suspended: false, emergency_contact: "", date_of_birth: null, notes: "", email: "", gender: "", address: "", source: "form", intake: {}, aadhaar_path: "", aadhaar_status: "none", ...over,
 });
 const rows = (members: AppRows["members"]): AppRows => ({ gym: null, plans: [], members, memberships: [], payments: [], attendance: [], expenses: [], team: [] });
 
@@ -44,5 +44,18 @@ describe("firstMembershipIds", () => {
     // Registered on the 18th, activated on the 20th, renewed in November.
     const ids = firstMembershipIds([r("renew", "m1", "2026-11-19", "2026-11-19T10:00:00"), r("first", "m1", "2026-10-20", "2026-10-20T10:00:00"), r("other", "m2", "2026-01-01", "2026-01-01T09:00:00")]);
     assert.deepEqual([...ids].sort(), ["first", "other"]);
+  });
+});
+
+describe("Aadhaar check before a registration starts", () => {
+  it("form registrations wait for a verified Aadhaar; app-added members and started ones don't", () => {
+    const data = toAppData(rows([
+      memberRow({ id: "p", aadhaar_path: "aadhaar/x.jpg", aadhaar_status: "pending" }),
+      memberRow({ id: "r", aadhaar_path: "aadhaar/y.jpg", aadhaar_status: "rejected" }),
+      memberRow({ id: "v", aadhaar_path: "aadhaar/z.jpg", aadhaar_status: "verified" }),
+      memberRow({ id: "s", source: "staff" }),
+      memberRow({ id: "a", plan: "Monthly", plan_days: 30, plan_price: 1000, start_date: "2026-10-20", expiry_date: "2026-11-18", aadhaar_status: "pending" }),
+    ]), (ts) => ts);
+    assert.deepEqual(data.members.map((m) => needsAadhaarCheck(m)), [true, true, false, false, false]);
   });
 });

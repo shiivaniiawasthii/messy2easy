@@ -5,7 +5,7 @@ import { Modal } from "../components/Modal";
 import { Button } from "../components/ui";
 import { type Payment, paymentMethods } from "../data/types";
 import { addDays, formatDate, formatDateLong, formatMoney, newId, nowLocal, parseMoney } from "../lib/format";
-import { durationLabel } from "../lib/members";
+import { durationLabel, needsAadhaarCheck } from "../lib/members";
 import { useStore } from "../store/store";
 
 export function RenewModal({ memberId, onClose }: { memberId: string; onClose: () => void }) {
@@ -54,6 +54,10 @@ export function RenewModal({ memberId, onClose }: { memberId: string; onClose: (
   const activating = member.pending;
   const title = activating ? (done ? "Membership activated" : "Activate membership") : (done ? "Membership renewed" : "Renew membership");
   const subtitle = done ? `${member.name} is covered until ${formatDateLong(done.expiry)}.` : activating ? `${member.name} · ${member.code} · registered ${formatDate(member.joined)}` : `${member.name} · ${member.plan} plan, expires ${formatDate(member.expiryDate)}`;
+  // A form registration can only start after the owner marks the Aadhaar valid (the database enforces it too).
+  if (!done && needsAadhaarCheck(member)) return <Modal title="Activate membership" subtitle={subtitle} onClose={onClose}>
+    <div className="modal-body confirm-body"><span className="confirm-icon"><Icon name="shield" size={22}/></span><p>The gym owner has to check {member.name}’s Aadhaar first. Open their profile and tap “Aadhaar valid”; the membership then starts.</p><div className="modal-actions"><Button onClick={onClose}>OK</Button></div></div>
+  </Modal>;
   return <Modal title={title} subtitle={subtitle} onClose={onClose}>
     {done ? <div className="modal-success"><span className="success-icon"><Icon name="check" size={28}/></span><strong>{done.plan} plan until {formatDate(done.expiry)}</strong><p>{paidNow ? `${formatMoney(paidNow.amount)} received via ${paidNow.method}` : "No payment recorded yet. The amount is added to the member’s balance."}</p><Button onClick={onClose}>Done</Button></div>
     : <form onSubmit={submit} noValidate>
