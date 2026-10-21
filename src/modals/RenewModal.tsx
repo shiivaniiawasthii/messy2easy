@@ -5,7 +5,7 @@ import { Modal } from "../components/Modal";
 import { Button } from "../components/ui";
 import { type Member, type Payment, paymentMethods } from "../data/types";
 import { addDays, formatDate, formatDateLong, formatMoney, newId, nowLocal, parseMoney } from "../lib/format";
-import { chosenPlan } from "../lib/intake";
+import { chosenPlan, JOIN_PAYMENTS } from "../lib/intake";
 import { durationLabel, needsAadhaarCheck } from "../lib/members";
 import { useStore } from "../store/store";
 
@@ -34,7 +34,10 @@ function StartRegistration({ member, chosen, onClose }: { member: Member; chosen
   const [fee, setFee] = useState("");
   const [paid, setPaid] = useState("");
   const [paidTouched, setPaidTouched] = useState(false);
-  const [method, setMethod] = useState(member.intake.payment === "Cash" ? "Cash" : "UPI");
+  // From the form ("Online (via UPI)" / "Offline (Cash)"); changeable only if they paid another way.
+  const formMethod = member.intake.payment === "Cash" ? "Cash" : "UPI";
+  const [method, setMethod] = useState(formMethod);
+  const [changeMethod, setChangeMethod] = useState(false);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(false);
@@ -65,12 +68,13 @@ function StartRegistration({ member, chosen, onClose }: { member: Member; chosen
         <span>Plan<strong>{chosen.name}</strong></span>
         <span>Starts<strong>{formatDate(start)}</strong></span>
         <span>Valid until<strong>{formatDate(expiry)}</strong></span>
+        <span>Payment<strong>{JOIN_PAYMENTS.find(([v]) => v === method)?.[1] ?? method}</strong>{!changeMethod && <button type="button" className="text-btn" onClick={() => setChangeMethod(true)}>Change</button>}</span>
       </div>
+      {changeMethod && <div className="field"><label htmlFor="start-method">Payment method <small>chosen on the form: {JOIN_PAYMENTS.find(([v]) => v === formMethod)?.[1]}</small></label><select id="start-method" value={method} onChange={(e) => setMethod(e.target.value)}>{paymentMethods.map((m) => <option key={m}>{m}</option>)}</select></div>}
       <div className="form-row">
         <div className="field"><label htmlFor="start-fee">Fee for this membership <i>*</i></label><div className="money-input"><span>₹</span><input id="start-fee" inputMode="numeric" autoFocus value={fee} onChange={(e) => { setFee(e.target.value); if (!paidTouched) setPaid(e.target.value); setError(""); }} placeholder="e.g. 2500"/></div></div>
         <div className="field"><label htmlFor="start-paid">Amount received now</label><div className="money-input"><span>₹</span><input id="start-paid" inputMode="numeric" value={paid} onChange={(e) => { setPaid(e.target.value); setPaidTouched(true); setError(""); }} placeholder="0"/></div></div>
       </div>
-      <div className="field"><label htmlFor="start-method">Payment method <small>chosen on the form: {member.intake.payment === "Cash" ? "Cash" : "UPI"}</small></label><select id="start-method" value={method} onChange={(e) => setMethod(e.target.value)}>{paymentMethods.map((m) => <option key={m}>{m}</option>)}</select></div>
       <div className="balance-box"><span>Fee<strong>{formatMoney(Number.isFinite(feeValue) ? feeValue : 0)}</strong></span><span>Received now<strong>{formatMoney(Number.isFinite(paidValue) ? paidValue : 0)}</strong></span><span>Due after this<strong className={due > 0 ? "amber-text" : "green-text"}>{formatMoney(due)}</strong></span></div>
       {error && <p className="form-error">{error}</p>}
       <div className="modal-actions"><Button variant="ghost" onClick={onClose}>Cancel</Button><Button type="submit" disabled={saving}>{saving ? "Saving…" : "Start membership"}</Button></div>
