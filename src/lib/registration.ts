@@ -16,11 +16,11 @@ export const registrationLink = (token: string) => `${window.location.origin}/?$
 /** WhatsApp text the owner forwards to people who want to join. */
 export function registrationMessage(gymName: string, link: string) {
   return [
-    `${gymName} me join karne ke liye ye form bharein 🙏`,
+    `To join ${gymName}, please fill in this form 🙏`,
     "",
     link,
     "",
-    "Form me Aadhaar card ki photo bhi upload karni hai. Form bharne ke baad gym aakar plan aur payment confirm karein.",
+    "You will also need to upload a photo of your Aadhaar card. After submitting, visit the gym to confirm your plan and payment.",
   ].join("\n");
 }
 

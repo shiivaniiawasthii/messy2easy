@@ -25,14 +25,14 @@ export const appLink = () => window.location.origin;
 export function loginMessage({ name, gymName, phone, temporaryPassword, reset = false }: { name: string; gymName: string; phone: string; temporaryPassword: string; reset?: boolean }) {
   const first = name.trim().split(/\s+/)[0] || "";
   return [
-    `Namaste ${first} 🙏`,
-    reset ? `${gymName} app ka aapka password reset kar diya gaya hai.` : `${gymName} ka gym management app aapke liye tayyar hai.`,
+    `Hi ${first} 🙏`,
+    reset ? `Your password for the ${gymName} app has been reset.` : `Your ${gymName} gym management app is ready.`,
     "",
     `Website: ${appLink()}`,
     `Login mobile: ${formatPhone(phone)}`,
     `Temporary password: ${temporaryPassword}`,
     "",
-    "Pehli baar login karne par apna naya password banayein.",
+    "Please set your own password when you log in for the first time.",
     "– Messy2Easy Solutions",
   ].join("\n");
 }
