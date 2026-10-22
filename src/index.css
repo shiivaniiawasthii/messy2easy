@@ -1382,3 +1382,14 @@ div.needs-bar { cursor: default; }
   .admin-stats > div:nth-child(2n) { border-right: 0 !important; }
   .admin-stats span, .admin-stats small, .admin-gym-numbers, .logo-picker small { font-size: 12px; }
 }
+
+/* Registration: jump between steps 1–7, bigger gym logo */
+.register-steps { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.register-steps button { height: 32px; display: grid; place-items: center; border: 1px solid #cfe3d7; border-radius: 9px; background: white; color: var(--muted); font: 700 13px "Manrope"; cursor: pointer; }
+.register-steps button.done { background: var(--primary-soft); color: var(--primary); border-color: #b9dcc8; }
+.register-steps button.current { background: var(--primary); color: white; border-color: var(--primary); }
+.register-steps button:disabled { cursor: wait; }
+.register-gym .register-logo { width: 64px; height: 64px; border-radius: 16px; }
+@media (max-width: 760px) {
+  .register-steps button { height: 38px; font-size: 14px; }
+}
