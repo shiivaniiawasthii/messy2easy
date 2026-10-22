@@ -18,7 +18,7 @@ const member = (over: Partial<Member> = {}): Member => ({
   balance: 0, suspended: false, emergency: "", dob: "", notes: "", email: "", gender: "", address: "", source: "staff", pending: false, intake: {}, aadhaarPath: "", aadhaarStatus: "none", ...over,
 });
 const gymData = (over: Partial<AppData> = {}): AppData => ({
-  gym: { name: "Wolves Area gym", address: "", phone: "", gstin: "", subscriptionPlan: "Pilot", subscriptionEndsOn: "", registrationToken: "" },
+  gym: { name: "Wolves Area gym", address: "", phone: "", gstin: "", subscriptionPlan: "Pilot", subscriptionEndsOn: "", registrationToken: "", logoPath: "" },
   members: [], plans: [], payments: [], attendance: [], renewals: [], expenses: [], ...over,
 });
 const visit = (m: Member, at: string) => ({ id: `a-${m.id}-${at}`, memberId: m.id, memberName: m.name, at, by: "" });
@@ -103,7 +103,7 @@ describe("daily summary", () => {
     const nowLocal = zonedDateTime(new Date("2026-10-12T18:45:00Z"));
     assert.equal(nowLocal, "2026-10-13T00:15:00");
     const rows: AppRows = {
-      gym: { name: "Night Gym", address: "", phone: "", gstin: "", subscription_plan: "Pilot", subscription_ends_on: null, registration_token: null },
+      gym: { name: "Night Gym", address: "", phone: "", gstin: "", subscription_plan: "Pilot", subscription_ends_on: null, registration_token: null, logo_path: "" },
       plans: [], memberships: [], expenses: [], team: [],
       members: [{ id: "m1", code: "M-1", name: "Night Owl", phone: "9876543210", color: "mint", joined_on: "2026-01-01", plan: "Monthly", plan_days: 30, plan_price: 1000, start_date: "2026-10-01", expiry_date: "2026-10-30", balance: 0, suspended: false, emergency_contact: "", date_of_birth: null, notes: "", email: "", gender: "", address: "", source: "staff", intake: {}, aadhaar_path: "", aadhaar_status: "none" }],
       payments: [

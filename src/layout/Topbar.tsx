@@ -6,6 +6,7 @@ import { SearchBox } from "../components/SearchBox";
 import { Avatar, Button } from "../components/ui";
 import { type ActivityKind, type ActivityRow, activityTime, describeActivity, lastSeenActivity, loadActivity, markActivitySeen, unreadActivity } from "../lib/activity";
 import { addDays, formatDate, formatTime, initialsOf } from "../lib/format";
+import { gymLogoUrl } from "../lib/logo";
 import { memberAlerts, plural } from "../lib/members";
 import { callNotifications, type NotificationInfo, summaryStatusLine } from "../lib/notifications";
 import { type Screen } from "../navigation";
@@ -105,5 +106,5 @@ export function Topbar({ setScreen, onSearch }: { setScreen: (s: Screen) => void
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
-  return <header className="topbar"><div className="mobile-brand"><span className="brand-mark">{data.gym.name.trim().charAt(0).toUpperCase() || "G"}</span><strong>{data.gym.name}</strong></div><SearchBox id="global-search" value={query} onChange={setQuery} onSubmit={() => { onSearch(query.trim()); setQuery(""); }} placeholder="Search members, payments..."/><div className="top-actions"><button className="icon-button notification" onClick={openBell} aria-label={unread.length ? `Notifications, ${unread.length} new` : "Notifications"}><Icon name="bell"/>{unread.length > 0 ? <em className="bell-count">{unread.length > 9 ? "9+" : unread.length}</em> : hasAlerts && <span/>}</button><Button icon="plus" onClick={() => setScreen("member-form")}>Add member</Button></div>{showNotifications && <NotificationsModal activity={activity} newIds={newIds} onClose={() => setShowNotifications(false)} onOpenRenewals={() => setScreen("renewals")}/>}</header>;
+  return <header className="topbar"><div className="mobile-brand">{data.gym.logoPath ? <img className="brand-logo" src={gymLogoUrl(data.gym.logoPath)} alt=""/> : <span className="brand-mark">{data.gym.name.trim().charAt(0).toUpperCase() || "G"}</span>}<strong>{data.gym.name}</strong></div><SearchBox id="global-search" value={query} onChange={setQuery} onSubmit={() => { onSearch(query.trim()); setQuery(""); }} placeholder="Search members, payments..."/><div className="top-actions"><button className="icon-button notification" onClick={openBell} aria-label={unread.length ? `Notifications, ${unread.length} new` : "Notifications"}><Icon name="bell"/>{unread.length > 0 ? <em className="bell-count">{unread.length > 9 ? "9+" : unread.length}</em> : hasAlerts && <span/>}</button><Button icon="plus" onClick={() => setScreen("member-form")}>Add member</Button></div>{showNotifications && <NotificationsModal activity={activity} newIds={newIds} onClose={() => setShowNotifications(false)} onOpenRenewals={() => setScreen("renewals")}/>}</header>;
 }

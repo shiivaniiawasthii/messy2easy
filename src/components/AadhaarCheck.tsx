@@ -69,7 +69,7 @@ export function AadhaarCheck({ member }: { member: Member }) {
       setSaving(false);
     }
   };
-  const askAgain = `Namaste ${member.name.split(" ")[0]} 🙏\n${data.gym.name} ke form me upload kiya gaya document sahi Aadhaar card nahi tha. Kripya gym aate waqt apna original Aadhaar card saath laayein, taaki aapki membership shuru ho sake.`;
+  const askAgain = `Hi ${member.name.split(" ")[0]} 🙏\nThe document you uploaded on the ${data.gym.name} registration form is not a valid Aadhaar card. Please bring your original Aadhaar card when you visit the gym so we can start your membership.`;
 
   return <div className="aadhaar-check">
     <Badge tone={tone}>{label}</Badge>

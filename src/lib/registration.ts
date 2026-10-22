@@ -16,24 +16,24 @@ export const registrationLink = (token: string) => `${window.location.origin}/?$
 /** WhatsApp text the owner forwards to people who want to join. */
 export function registrationMessage(gymName: string, link: string) {
   return [
-    `${gymName} me join karne ke liye ye form bharein 🙏`,
+    `To join ${gymName}, please fill in this form 🙏`,
     "",
     link,
     "",
-    "Form me Aadhaar card ki photo bhi upload karni hai. Form bharne ke baad gym aakar plan aur payment confirm karein.",
+    "You will also need to upload a photo of your Aadhaar card. After submitting, visit the gym to confirm your plan and payment.",
   ].join("\n");
 }
 
 /** Shared with any app (no phone number), e.g. a WhatsApp group. */
 export const whatsappShareLink = (message: string) => `https://wa.me/?text=${encodeURIComponent(message)}`;
 
-export type RegistrationGym = { name: string; address: string; phone: string; plans: Plan[] };
+export type RegistrationGym = { name: string; address: string; phone: string; plans: Plan[]; logoPath: string };
 
 /** The gym behind a link, or null when the link is wrong, turned off or the gym is paused. */
 export async function loadRegistrationForm(token: string): Promise<RegistrationGym | null> {
-  const { data, error } = await supabase.rpc("registration_form", { p_token: token }).maybeSingle<{ gym_name: string; gym_address: string; gym_phone: string; plans: Plan[] }>();
+  const { data, error } = await supabase.rpc("registration_form", { p_token: token }).maybeSingle<{ gym_name: string; gym_address: string; gym_phone: string; plans: Plan[]; logo_path: string | null }>();
   if (error) throw new Error(friendly(error.message));
-  return data ? { name: data.gym_name, address: data.gym_address, phone: data.gym_phone, plans: data.plans ?? [] } : null;
+  return data ? { name: data.gym_name, address: data.gym_address, phone: data.gym_phone, plans: data.plans ?? [], logoPath: data.logo_path ?? "" } : null;
 }
 
 /** Saves the registration with the Aadhaar copy and returns the new member code (e.g. "M-0042"). */
