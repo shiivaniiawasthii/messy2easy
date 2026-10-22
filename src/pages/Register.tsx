@@ -141,6 +141,18 @@ function RegisterForm({ token, gym, onDone }: { token: string; gym: Registration
     setStep(next);
     window.setTimeout(() => topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
   };
+  /** Step buttons 1–7: back freely; forward only past complete steps (stops at the first one with a gap). */
+  const jumpTo = (target: number) => {
+    if (target <= step) return goTo(target);
+    for (let i = step; i < target; i++) {
+      const checked = steps[i].check();
+      if (!checked.ok) {
+        if (i !== step) goTo(i);
+        return showError(checked.error);
+      }
+    }
+    goTo(target);
+  };
 
   function pickFile(file: File | null) {
     setError("");
@@ -177,6 +189,7 @@ function RegisterForm({ token, gym, onDone }: { token: string; gym: Registration
     <div className="register-progress" aria-label={`Step ${step + 1} of ${steps.length}`}>
       <div><span>Step {step + 1} of {steps.length}</span><strong>{current.title}</strong></div>
       <div className="register-progress-bar"><i style={{ width: `${((step + 1) / steps.length) * 100}%` }}/></div>
+      <div className="register-steps" role="tablist" aria-label="Form steps">{steps.map((s, i) => <button key={s.title} type="button" role="tab" aria-selected={i === step} title={s.title} aria-label={`Step ${i + 1}: ${s.title}`} className={i === step ? "current" : i < step ? "done" : ""} onClick={() => jumpTo(i)} disabled={saving}>{i < step ? <Icon name="check" size={13}/> : i + 1}</button>)}</div>
     </div>
     <form onSubmit={submit} noValidate className="register-form">
       <div className="register-step" key={step}>{current.body}</div>
