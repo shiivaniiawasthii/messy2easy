@@ -2,6 +2,7 @@ import { SIGN_OUT_CONFIRM, useConfirm } from "../components/Confirm";
 import { Icon } from "../components/Icon";
 import { Avatar } from "../components/ui";
 import { diffDays, formatDate, initialsOf } from "../lib/format";
+import { gymLogoUrl } from "../lib/logo";
 import { isExpiringSoon, plural } from "../lib/members";
 import { navFor, navScreen, type Screen } from "../navigation";
 import { useStore } from "../store/store";
@@ -12,7 +13,7 @@ export function Sidebar({ screen, setScreen }: { screen: Screen; setScreen: (s: 
   const confirm = useConfirm();
   const renewalsDue = data.members.filter((m) => isExpiringSoon(m, today)).length;
   return <aside className="sidebar">
-    <button className="brand" onClick={() => setScreen("dashboard")}><span className="brand-mark">{data.gym.name.trim().charAt(0).toUpperCase() || "G"}</span><span><strong title={data.gym.name}>{data.gym.name}</strong><small>by Messy2Easy</small></span></button>
+    <button className="brand" onClick={() => setScreen("dashboard")}>{data.gym.logoPath ? <img className="brand-logo" src={gymLogoUrl(data.gym.logoPath)} alt=""/> : <span className="brand-mark">{data.gym.name.trim().charAt(0).toUpperCase() || "G"}</span>}<span><strong title={data.gym.name}>{data.gym.name}</strong><small>by Messy2Easy</small></span></button>
     <nav className="side-nav">
       <div className="nav-label">Workspace</div>
       {items.filter((item) => item.section === "workspace").map((item) => <button key={item.id} className={`nav-item ${navScreen(screen) === item.id ? "active" : ""}`} onClick={() => setScreen(item.id)}><Icon name={item.icon}/><span>{item.label}</span>{item.id === "renewals" && renewalsDue > 0 && <em>{renewalsDue}</em>}</button>)}

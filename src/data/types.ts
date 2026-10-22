@@ -86,7 +86,7 @@ export type Renewal = {
 };
 
 /** `registrationToken` is "" while the public registration link is off. */
-export type GymProfile = { name: string; address: string; phone: string; gstin: string; subscriptionPlan: string; subscriptionEndsOn: string; registrationToken: string };
+export type GymProfile = { name: string; address: string; phone: string; gstin: string; subscriptionPlan: string; subscriptionEndsOn: string; registrationToken: string; logoPath: string };
 
 export type Expense = { id: string; date: string; category: string; amount: number; method: string; note: string };
 

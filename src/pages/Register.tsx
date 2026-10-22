@@ -6,6 +6,7 @@ import { Button } from "../components/ui";
 import { type Intake } from "../data/types";
 import { addDays, todayISO } from "../lib/format";
 import { AADHAAR_ACCEPT, AADHAAR_MAX_BYTES, AADHAAR_TYPES, checkPersonal, checkQuestions, checkRegistration, checkSubscription, GENDERS, INTAKE_SECTIONS, JOIN_PAYMENTS, MAX_START_DAYS, STANDARD_PLANS } from "../lib/intake";
+import { gymLogoUrl } from "../lib/logo";
 import { loadRegistrationForm, type RegistrationGym, shrinkPhoto, submitRegistration } from "../lib/registration";
 
 type PageState =
@@ -171,7 +172,7 @@ function RegisterForm({ token, gym, onDone }: { token: string; gym: Registration
   };
 
   return <AuthLayout footer={FOOTER}>
-    <div ref={topRef} className="register-gym"><span className="large-icon"><Icon name="building"/></span><span><strong>{gym.name}</strong>{gym.address && <small>{gym.address}</small>}</span></div>
+    <div ref={topRef} className="register-gym">{gym.logoPath && <img className="register-logo" src={gymLogoUrl(gym.logoPath)} alt=""/>}<span><strong>{gym.name}</strong>{gym.address && <small>{gym.address}</small>}</span></div>
     {step === 0 && <><h1>Register as a gym member</h1><p>It takes about 3 minutes. Questions marked {req} are required.</p></>}
     <div className="register-progress" aria-label={`Step ${step + 1} of ${steps.length}`}>
       <div><span>Step {step + 1} of {steps.length}</span><strong>{current.title}</strong></div>
